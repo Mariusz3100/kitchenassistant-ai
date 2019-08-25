@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
-public class HelloController {
+public class TestController {
     
 	TokenizationClientService tokenizationService;
 	NamedEntityRecognitionClientService nerService;
@@ -22,7 +22,7 @@ public class HelloController {
 
 
 	@Autowired
-	public HelloController(TokenizationClientService tokenizationService,
+	public TestController(TokenizationClientService tokenizationService,
 			NamedEntityRecognitionClientService nerService) {
 		super();
 		this.tokenizationService = tokenizationService;
