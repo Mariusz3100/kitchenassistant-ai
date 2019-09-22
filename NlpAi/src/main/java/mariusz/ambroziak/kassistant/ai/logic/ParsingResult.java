@@ -1,5 +1,7 @@
 package mariusz.ambroziak.kassistant.ai.logic;
 
+import java.util.List;
+
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 
 class ParsingResult{
@@ -7,8 +9,16 @@ class ParsingResult{
 	private String entities;
 	private String entityLess;
 	private String tokenString;
+	private List<QualifiedToken> tokens;
 	
-	
+
+	public List<QualifiedToken> getTokens() {
+		return tokens;
+	}
+
+	public void setTokens(List<QualifiedToken> tokens) {
+		this.tokens = tokens;
+	}
 
 	public String getTokenString() {
 		return tokenString;

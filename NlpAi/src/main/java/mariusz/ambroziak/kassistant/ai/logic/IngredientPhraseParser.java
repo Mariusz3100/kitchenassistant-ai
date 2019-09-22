@@ -26,6 +26,9 @@ import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NerResults;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
+import mariusz.ambroziak.kassistant.ai.wordsapi.WordNotFoundException;
+import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiClient;
+import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiResult;
 
 
 
@@ -36,9 +39,9 @@ public class IngredientPhraseParser {
 	private NamedEntityRecognitionClientService nerRecognizer;
 	private ResourceLoader resourceLoader;
 	private Resource inputFileResource;
-	
-	
-	
+
+	@Autowired
+	private WordClasifier wordClasifier;
 
 	public IngredientPhraseParser(TokenizationClientService tokenizator,
 			NamedEntityRecognitionClientService nerRecognizer, ResourceLoader resourceLoader) {
@@ -54,83 +57,92 @@ public class IngredientPhraseParser {
 
 	public ParsingResultList parseFromFile() throws IOException {
 		ParsingResultList retValue=new ParsingResultList();
+		MultiValuedMap<String, NamedEntity> entitiesMap = new ArrayListValuedHashMap<>();
+
 		InputStream inputStream = inputFileResource.getInputStream();
 		BufferedReader br=new BufferedReader(new InputStreamReader(inputStream));
-		
-		MultiValuedMap<String, NamedEntity> entitiesMap = new ArrayListValuedHashMap<>();
-		
+
+
 		String line=br.readLine();
 
 		while(line!=null) {
-			ParsingResult object=new ParsingResult();
-			object.setOriginalPhrase(line);
-			
+			line=correctErrors(line);
+
+
 			NerResults entitiesFound = this.nerRecognizer.find(line);
 			String entitiesString="";
 			String entitylessString="";
 
 			if(entitiesFound!=null&&!entitiesFound.getEntities().isEmpty()) {
-				int lastEnd=0;
 				for(NamedEntity ner:entitiesFound.getEntities()) {
 					entitiesString+=ner.getText()+" ["+ner.getLabel()+"]";
 					if(ner.getLabel().equals("CARDINAL")) {
 						entitiesMap.put(line, ner);
 					}else {
 						entitylessString+=line.replaceAll(ner.getText(),"");
-						
 					}
 				}
-				if(entitylessString.isEmpty()) {
-					entitylessString=line;
-				}
 			}
-			
-			
-			
-			 List<QualifiedToken> results=calculateWordType(entitylessString,entitiesMap);
-			
+			if(entitylessString.isEmpty()) {
+				entitylessString=line;
+			}
+
+			List<QualifiedToken> results=calculateWordType(entitylessString,entitiesMap);
+
 			String tokensString="| ";
 			for(QualifiedToken t:results){
-				String oneString="";
-				if(WordType.ProductElement.equals(t.getWordType())){
-					oneString="<font color=\"green\">"+t.text+"</font> | ";
 
-				}else if(WordType.QuantityElement.equals(t.getWordType())){
-					oneString="<font color=\"blue\">"+t.text+"</font> | ";
-
-				}else{
-					oneString="<font color=\"red\">"+t.text+"</font> | ";
-
-				}
-				tokensString+=oneString;
+				tokensString+=t.text+" | ";
 			}
-			
-			
-			object.setEntities(entitiesString);
-			object.setEntityLess(entitylessString);
-			object.setTokenString(tokensString);
-			
+			ParsingResult object = createResultObject(line, entitiesString, entitylessString, results, tokensString);
+
 			retValue.addResult(object);
-			
+
 			line=br.readLine();
 		}
 
 		return retValue;
-		
+
 	}
 
 
+
+
+	private ParsingResult createResultObject(String line, String entitiesString, String entitylessString,
+			List<QualifiedToken> results, String tokensString) {
+		ParsingResult object=new ParsingResult();
+		object.setOriginalPhrase(line);
+		object.setTokens(results);
+		object.setEntities(entitiesString);
+		object.setEntityLess(entitylessString);
+		object.setTokenString(tokensString);
+		return object;
+	}
+
+
+	private static String correctErrors(String phrase) {
+
+		phrase=phrase.replaceFirst("½", "1/2");
+		phrase=phrase.replaceFirst("¼", "1/4");
+		if(phrase.substring(0, phrase.length()<10?phrase.length():10).indexOf(" c ")>0) {
+			phrase=phrase.replaceFirst(" c ", " cup ");
+		}
+
+
+
+		return phrase;
+	}
 
 
 	private List<QualifiedToken> calculateWordType(String phrase, MultiValuedMap<String, NamedEntity> entitiesMap) {
 		TokenizationResults tokens = this.tokenizator.parse(phrase);
 
 		List<QualifiedToken> retValue=new ArrayList<QualifiedToken>();
-		
+
 		for(Token t:tokens.getTokens()) {
-			
+
 			WordType chosenType = null;
-			
+
 			if(PythonSpacyLabels.tokenisationCardinalLabel.equals(t.getTag())) {
 				chosenType=WordType.QuantityElement;
 
@@ -148,18 +160,29 @@ public class IngredientPhraseParser {
 						}
 					}
 				}
-				
+
+			}else {
+
+				try {
+					chosenType = this.wordClasifier.classifyWord(t);
+
+				} catch (WordNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+
 			}
-			
-			
-			
+
+
+
 			retValue.add(new QualifiedToken(t, chosenType));
 		}
-		
+
 		return retValue;
-		
+
 	}
-	
-	
-	
+
+
+
 }
