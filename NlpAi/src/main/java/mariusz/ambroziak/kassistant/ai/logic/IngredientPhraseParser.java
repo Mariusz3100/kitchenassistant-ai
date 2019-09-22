@@ -135,54 +135,63 @@ public class IngredientPhraseParser {
 
 
 	private List<QualifiedToken> calculateWordType(String phrase, MultiValuedMap<String, NamedEntity> entitiesMap) {
-		TokenizationResults tokens = this.tokenizator.parse(phrase);
+		List<String> tokens = this.tokenizator.justTokenize(phrase);
 
 		List<QualifiedToken> retValue=new ArrayList<QualifiedToken>();
 
-		for(Token t:tokens.getTokens()) {
+		for(String t:tokens) {
 
 			WordType chosenType = null;
 
-			if(PythonSpacyLabels.tokenisationCardinalLabel.equals(t.getTag())) {
-				chosenType=WordType.QuantityElement;
 
-				if(entitiesMap.containsKey(phrase)) {
-					Collection<NamedEntity> entities = entitiesMap.get(phrase);
-					Iterator<NamedEntity> iterator = entities.iterator();
-					while(iterator.hasNext()) {
-						NamedEntity next = iterator.next();
-						if(next.getText().contains(t.getText())){
-							if(!PythonSpacyLabels.entitiesCardinalLabel.equals(next.getLabel())) {
-								System.err.println("Tokenization and Ner labels do not match");
-								chosenType=null;
+			try {
+				Token tempToken = tokenizeSingleWord(t);
 
-							}
-						}
-					}
-				}
+				chosenType = this.wordClasifier.classifyWord(tempToken);
+				retValue.add(new QualifiedToken(tempToken, chosenType));
 
-			}else {
+			} catch (WordNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Token tempToken=new Token(t, "not found", "not found");
+				retValue.add(new QualifiedToken(tempToken,null));
 
-				try {
-					chosenType = this.wordClasifier.classifyWord(t);
-
-				} catch (WordNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-
+				
 			}
 
 
 
-			retValue.add(new QualifiedToken(t, chosenType));
 		}
 
 		return retValue;
 
 	}
+	
+	public WordType classifyWord(Token t) throws WordNotFoundException {
+		 return this.wordClasifier.classifyWord(t);
+	}
 
+//	public WordType classifyWord(String phrase) throws WordNotFoundException {
+//		TokenizationResults parse = this.tokenizator.parse(phrase);
+//		
+//		if(parse.getTokens()==null||parse.getTokens().size()<0) {
+//			return null;
+//		}else {
+//			return this.wordClasifier.classifyWord(parse.getTokens().get(0));
+//		}
+//		
+//	}
+
+	public Token tokenizeSingleWord(String phrase) throws WordNotFoundException {
+		TokenizationResults parse = this.tokenizator.parse(phrase);
+		
+		if(parse.getTokens()==null||parse.getTokens().size()<0) {
+			return null;
+		}else {
+			return parse.getTokens().get(0);
+		}
+		
+	}
 
 
 }

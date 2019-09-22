@@ -66,6 +66,7 @@ public class WordClasifier {
 
 	}
 
+	
 
 	public WordType classifyWord(Token t) throws WordNotFoundException {
 

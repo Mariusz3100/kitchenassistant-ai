@@ -1,5 +1,9 @@
 package mariusz.ambroziak.kassistant.ai.nlpclients.tokenization;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
@@ -22,5 +26,24 @@ public class TokenizationClientService {
 		return retValue;
 	}
 
+	
+	public List<String> justTokenize(String name) {
+		//	TokenizationResults retValue=this.restTemplate.getForObject("http://127.0.0.1:8000/tokenizer?param={param}", TokenizationResults.class,name);
+		TokenizationResults retValue=new TokenizationResults();
+
+		retValue.setPhrase("");
+		if(name==null||name.isEmpty()) {
+			return new ArrayList<String>();
+		}
+		else
+		{
+			String[] split = name.split(" ");
+			List<String> tokens = Arrays.asList(split);
+			return tokens;
+		}
+
+	}
+	
+	
 	
 }
