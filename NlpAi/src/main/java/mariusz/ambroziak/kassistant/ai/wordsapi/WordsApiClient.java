@@ -62,7 +62,7 @@ public class WordsApiClient extends RapidApiClient {
 		String url = baseUrl+UriUtils.encodePath(phrase, java.nio.charset.StandardCharsets.UTF_8.toString());
 		
 		
-		System.out.println("Retrieved: "+url);
+		//System.out.println("Retrieved: "+url);
 		if(phrase==null||phrase.equals(""))
 			return new ArrayList<WordsApiResult>();
 		try {

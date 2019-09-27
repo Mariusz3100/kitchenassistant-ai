@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
+import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
 import mariusz.ambroziak.kassistant.ai.utils.QuantityTranslation;
 import mariusz.ambroziak.kassistant.ai.wikipedia.WikipediaApiClient;
 import mariusz.ambroziak.kassistant.ai.wordsapi.ConvertApiClient;
@@ -19,6 +20,7 @@ import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiResult;
 public class WordClasifier {
 	private static String wikipediaCheckRegex=".*[a-zA-Z].*";
 	private static String convertApiCheckRegex=".*[a-zA-Z].*";
+	private static String punctuationRegex="[\\.,\\-]*";
 
 	
 	@Autowired
@@ -33,6 +35,7 @@ public class WordClasifier {
 	public static ArrayList<String> productTypeKeywords;
 	public static ArrayList<String> irrelevanceKeywords;
 	public static ArrayList<String> quantityTypeKeywords;
+	public static ArrayList<String> punctationTypeKeywords;
 
 
 
@@ -61,18 +64,34 @@ public class WordClasifier {
 		quantityTypeKeywords.add("containerful");
 		quantityTypeKeywords.add("small indefinite quantity");
 		quantityTypeKeywords.add("weight unit");
+		quantityTypeKeywords.add("capacity unit");
+		
+		
 
+		
 
 
 	}
 
-	
+//	public WordType classifyWord(Token t) throws WordNotFoundException {
+//		TokenizationResults empty=new TokenizationResults();
+//		empty.setPhrase("");
+//		empty.setTokens(new ArrayList<Token>());
+//		return classifyWord(empty , t);
+//	
+//	}
 
-	public WordType classifyWord(Token t) throws WordNotFoundException {
-
+	public WordType classifyWord(TokenizationResults tokens, int index) throws WordNotFoundException {
+		Token t=tokens.getTokens().get(index);
 		WordType retValue=null;
 		String token=t.getText();
 		String lemma=t.getLemma();
+		
+		
+		if(Pattern.matches(punctuationRegex, token)) {
+			return WordType.PunctuationElement;
+		}
+		
 		ArrayList<WordsApiResult> wordResults = wordsApiClient.searchFor(token);
 
 		if(wordResults==null||wordResults.isEmpty()) {
@@ -115,12 +134,19 @@ public class WordClasifier {
 		}
 
 		if(wordResults!=null&&!wordResults.isEmpty()) {
-			if(checkQuantityTypesForWordObject(wordResults)) {
+			WordsApiResult quantityTypeRecognized = checkQuantityTypesForWordObject(wordResults);
+			if(quantityTypeRecognized!=null) {
 				return WordType.QuantityElement;
-			}else if(checkProductTypesForWordObject(wordResults)) {
-				return WordType.ProductElement;
-			}else {
-				return null;
+			} else {
+				WordsApiResult productTypeRecognized = checkProductTypesForWordObject(wordResults);
+				if(productTypeRecognized==null) {
+					return WordType.ProductElement;
+					
+					
+					
+				}else {
+					return null;
+				}
 			}
 		}
 
@@ -132,23 +158,23 @@ public class WordClasifier {
 
 
 
-	private static boolean checkProductTypesForWordObject(ArrayList<WordsApiResult> wordResults) {
+	private static WordsApiResult checkProductTypesForWordObject(ArrayList<WordsApiResult> wordResults) {
 		for(WordsApiResult war:wordResults) {
 			if(checkIfTypesContainKeywords(war.getOriginalWord(),war.getTypeOf(),productTypeKeywords)) {
-				return true;
+				return war;
 			}
 		}
-		return false;		
+		return null;		
 	}
 
 
-	private static boolean checkQuantityTypesForWordObject(ArrayList<WordsApiResult> wordResults) {
+	private static WordsApiResult checkQuantityTypesForWordObject(ArrayList<WordsApiResult> wordResults) {
 		for(WordsApiResult war:wordResults) {
 			if(checkIfTypesContainKeywords(war.getOriginalWord(),war.getTypeOf(),quantityTypeKeywords)) {
-				return true;
+				return war;
 			}
 		}
-		return false;		
+		return null;		
 	}
 
 

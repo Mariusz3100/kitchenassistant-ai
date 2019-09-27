@@ -63,6 +63,16 @@ public class TestController {
 		System.out.println();
 		ArrayList<TokenizationResults> retValue=new ArrayList<TokenizationResults>();
 		retValue.addAll(parseFromFile.values());
+		
+		for(String x:parseFromFile.keySet()) {
+			String resultLine=x+" : ";
+			
+			for(Token r:parseFromFile.get(x).getTokens()) {
+				resultLine+=r.text+" | ";
+			}
+			
+			System.out.println(resultLine);
+		}
 		return retValue;
 
 	}

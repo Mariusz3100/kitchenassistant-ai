@@ -133,43 +133,121 @@ public class IngredientPhraseParser {
 		return phrase;
 	}
 
-
 	private List<QualifiedToken> calculateWordType(String phrase, MultiValuedMap<String, NamedEntity> entitiesMap) {
-		List<String> tokens = this.tokenizator.justTokenize(phrase);
+		TokenizationResults tokens = this.tokenizator.parse(phrase);
 
 		List<QualifiedToken> retValue=new ArrayList<QualifiedToken>();
 
-		for(String t:tokens) {
-
+		for(int i=0;i<tokens.getTokens().size();i++) {
+			Token t=tokens.getTokens().get(i);
 			WordType chosenType = null;
 
+			if(PythonSpacyLabels.tokenisationCardinalLabel.equals(t.getTag())) {
+				chosenType=WordType.QuantityElement;
 
-			try {
-				Token tempToken = tokenizeSingleWord(t);
+				if(entitiesMap.containsKey(phrase)) {
+					Collection<NamedEntity> entities = entitiesMap.get(phrase);
+					Iterator<NamedEntity> iterator = entities.iterator();
+					while(iterator.hasNext()) {
+						NamedEntity next = iterator.next();
+						if(next.getText().contains(t.getText())){
+							if(!PythonSpacyLabels.entitiesCardinalLabel.equals(next.getLabel())) {
+								System.err.println("Tokenization and Ner labels do not match");
+								chosenType=null;
 
-				chosenType = this.wordClasifier.classifyWord(tempToken);
-				retValue.add(new QualifiedToken(tempToken, chosenType));
+							}
+						}
+					}
+				}
 
-			} catch (WordNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				Token tempToken=new Token(t, "not found", "not found");
-				retValue.add(new QualifiedToken(tempToken,null));
+			}else {
 
-				
+				try {
+					chosenType = this.wordClasifier.classifyWord(tokens,i);
+
+				} catch (WordNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+
 			}
 
 
 
+			retValue.add(new QualifiedToken(t, chosenType));
 		}
 
 		return retValue;
 
 	}
-	
-	public WordType classifyWord(Token t) throws WordNotFoundException {
-		 return this.wordClasifier.classifyWord(t);
-	}
+
+//	private List<QualifiedToken> calculateWordType(String phrase, MultiValuedMap<String, NamedEntity> entitiesMap) {
+//		TokenizationResults tokens = this.tokenizator.parse(phrase);
+//
+//		List<QualifiedToken> retValue=new ArrayList<QualifiedToken>();
+//
+//		for(Token t:tokens.getTokens()) {
+//
+//			WordType chosenType = null;
+//
+//
+//			try {
+//				
+//				chosenType = this.wordClasifier.classifyWord(t);
+//				retValue.add(new QualifiedToken(t, chosenType));
+//
+//			} catch (WordNotFoundException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//				retValue.add(new QualifiedToken(t,null));
+//
+//				
+//			}
+//
+//
+//
+//		}
+//
+//		return retValue;
+//
+//	}
+//	private List<QualifiedToken> calculateWordTypeBySpaceSplit(String phrase, MultiValuedMap<String, NamedEntity> entitiesMap) {
+//		List<String> tokens = this.tokenizator.justTokenize(phrase);
+//
+//		List<QualifiedToken> retValue=new ArrayList<QualifiedToken>();
+//
+//		for(String t:tokens) {
+//
+//			WordType chosenType = null;
+//
+//
+//			try {
+//				Token tempToken = tokenizeSingleWord();
+//				
+//				chosenType = this.wordClasifier.classifyWord(tempToken);
+//				retValue.add(new QualifiedToken(tempToken, chosenType));
+//
+//			} catch (WordNotFoundException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//				Token tempToken=new Token(t, "not found", "not found");
+//				retValue.add(new QualifiedToken(tempToken,null));
+//
+//				
+//			}
+//
+//
+//
+//		}
+//
+//		return retValue;
+//
+//	}
+
+//	public WordType classifyWord(Token t) throws WordNotFoundException {
+//		 return this.wordClasifier.classifyWord(t);
+//	}
 
 //	public WordType classifyWord(String phrase) throws WordNotFoundException {
 //		TokenizationResults parse = this.tokenizator.parse(phrase);
@@ -182,13 +260,13 @@ public class IngredientPhraseParser {
 //		
 //	}
 
-	public Token tokenizeSingleWord(String phrase) throws WordNotFoundException {
+	public TokenizationResults tokenizeSingleWord(String phrase) throws WordNotFoundException {
 		TokenizationResults parse = this.tokenizator.parse(phrase);
 		
-		if(parse.getTokens()==null||parse.getTokens().size()<0) {
-			return null;
+		if(parse.getTokens()==null||parse.getTokens().size()<1) {
+			return new TokenizationResults();
 		}else {
-			return parse.getTokens().get(0);
+			return parse;
 		}
 		
 	}

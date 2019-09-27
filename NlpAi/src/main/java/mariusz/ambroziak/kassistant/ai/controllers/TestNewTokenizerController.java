@@ -122,7 +122,7 @@ public class TestNewTokenizerController {
 				String word = i>=bySpace.size()?
 						"-":bySpace.get(i);
 				TokenizationResults parse2 = this.tokenizator.parse(word);
-				//System.out.println(word+" -> "+parse2.getTokens().get(0).lemma+" ["+byTokenizer.get(i).text+" -> "+byTokenizer.get(i).lemma+"]");
+				System.out.println(word+" -> "+parse2.getTokens().get(0).lemma+" ["+byTokenizer.get(i).text+" -> "+byTokenizer.get(i).lemma+"]");
 
 				if((byTokenizer.get(i).text.indexOf(word)>0||word.indexOf(byTokenizer.get(i).text)>0)&&!parse2.getTokens().get(0).lemma.equals(byTokenizer.get(i).lemma)) {
 
@@ -169,7 +169,7 @@ public class TestNewTokenizerController {
 				TokenizationResults parse2 = this.tokenizator.parse(word);
 				System.out.println(word+" -> "+parse2.getTokens().get(0).tag+" ["+byTokenizer.get(i).text+" -> "+byTokenizer.get(i).tag+"]");
 
-				if((byTokenizer.get(i).text.indexOf(word)>0||word.indexOf(byTokenizer.get(i).text)>0)&&!parse2.getTokens().get(0).tag.equals(byTokenizer.get(i).tag)) {
+				if((byTokenizer.get(i).text.indexOf(word)>=0||word.indexOf(byTokenizer.get(i).text)>=0)&&!parse2.getTokens().get(0).tag.equals(byTokenizer.get(i).tag)) {
 
 					System.out.println("err "+word+" -> "+parse2.getTokens().get(0).tag+" ["+byTokenizer.get(i).text+" -> "+byTokenizer.get(i).tag+"]");
 				}					
@@ -217,6 +217,46 @@ public class TestNewTokenizerController {
 				}
 				System.out.println("\n");
 
+
+
+				line=br.readLine();
+			}
+
+
+
+		return retValue;
+
+	}
+		
+		
+		
+		@RequestMapping("/testTokenizerAdjusting")
+		@ResponseBody
+		public List<String> testTokenizerAdjusting() throws IOException{
+			Resource inputFileResource = this.resourceLoader.getResource("classpath:/teachingResources/wordsInput");
+			List<String> retValue=new ArrayList<String>();
+
+			InputStream inputStream = inputFileResource.getInputStream();
+			BufferedReader br=new BufferedReader(new InputStreamReader(inputStream));
+
+
+			String line=br.readLine();
+
+			while(line!=null) {
+
+				retValue.add(line);
+
+				TokenizationResults parse = this.tokenizator.parse(line);
+				String effect=line+": ";
+
+				for(int i=0;i<parse.getTokens().size();i++) {
+					Token x=parse.getTokens().get(i);
+					effect+=x.getText()+" ("+x.getTag()+") | ";
+
+										
+				}
+
+				System.out.println(effect);
 
 
 				line=br.readLine();
