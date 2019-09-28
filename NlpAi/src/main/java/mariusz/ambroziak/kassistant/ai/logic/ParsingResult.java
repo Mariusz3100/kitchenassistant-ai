@@ -3,7 +3,7 @@ package mariusz.ambroziak.kassistant.ai.logic;
 import java.util.List;
 
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
-
+//class mainly for presenting in angular
 class ParsingResult{
 	private String originalPhrase;
 	private String entities;

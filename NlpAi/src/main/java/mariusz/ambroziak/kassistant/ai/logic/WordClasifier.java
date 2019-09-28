@@ -1,14 +1,17 @@
 package mariusz.ambroziak.kassistant.ai.logic;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
+import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
+import mariusz.ambroziak.kassistant.ai.utils.ParsingProcessObject;
 import mariusz.ambroziak.kassistant.ai.utils.QuantityTranslation;
 import mariusz.ambroziak.kassistant.ai.wikipedia.WikipediaApiClient;
 import mariusz.ambroziak.kassistant.ai.wordsapi.ConvertApiClient;
@@ -81,6 +84,48 @@ public class WordClasifier {
 //	
 //	}
 
+	public List<QualifiedToken> calculateWordsType(ParsingProcessObject parsingAPhrase) {
+		List<QualifiedToken> retValue=new ArrayList<QualifiedToken>();
+
+		for(int i=0;i<parsingAPhrase.getEntitylessTokenized().getTokens().size();i++) {
+			Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(i);
+			WordType chosenType = null;
+
+			if(PythonSpacyLabels.tokenisationCardinalLabel.equals(t.getTag())) {
+				chosenType=WordType.QuantityElement;
+				List<NamedEntity> cardinalEntities = parsingAPhrase.getCardinalEntities();
+
+				for(NamedEntity cardinalEntity:cardinalEntities) {
+					if(cardinalEntity.getText().contains(t.getText())){
+						if(!PythonSpacyLabels.entitiesCardinalLabel.equals(cardinalEntity.getLabel())) {
+							System.err.println("Tokenization and Ner labels do not match");
+							chosenType=null;
+
+						}
+					}
+				}
+			}else {
+
+				try {
+					chosenType = classifyWord(parsingAPhrase.getEntitylessTokenized(),i);
+
+				} catch (WordNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+
+			}
+
+
+
+			retValue.add(new QualifiedToken(t, chosenType));
+		}
+		parsingAPhrase.setFinalResults(retValue);
+		return retValue;
+
+	}
+	
 	public WordType classifyWord(TokenizationResults tokens, int index) throws WordNotFoundException {
 		Token t=tokens.getTokens().get(index);
 		WordType retValue=null;
