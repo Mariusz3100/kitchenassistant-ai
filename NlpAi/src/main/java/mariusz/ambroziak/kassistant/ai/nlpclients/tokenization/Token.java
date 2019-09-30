@@ -4,10 +4,26 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Token {
-	public String text;
-	public String lemma;
-	public String tag;
-	
+	private String text;
+	private String lemma;
+	private String tag;
+
+	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof Token))
+			return false;
+		else {
+			if(this.text==null&&((Token)obj).getText()!=null)
+				return false;
+			else 
+				return this.getText().equals(((Token)obj).getText());
+		}
+	}
+	@Override
+	public int hashCode() {
+		// TODO Auto-generated method stub
+		return this.getText()==null?0:this.getText().hashCode();
+	}
 	@Override
 	public String toString() {
 		return "Token [text=" + text + ", lemma=" + lemma + ", tag=" + tag + "]";
@@ -38,7 +54,7 @@ public class Token {
 	}
 
 
-	
+
 
 
 

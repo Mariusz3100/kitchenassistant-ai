@@ -68,7 +68,7 @@ public class TestController {
 			String resultLine=x+" : ";
 			
 			for(Token r:parseFromFile.get(x).getTokens()) {
-				resultLine+=r.text+" | ";
+				resultLine+=r.getText()+" | ";
 			}
 			
 			System.out.println(resultLine);

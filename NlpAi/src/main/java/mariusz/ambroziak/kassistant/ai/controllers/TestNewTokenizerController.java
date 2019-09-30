@@ -65,8 +65,8 @@ public class TestNewTokenizerController {
 
 			if(bySpace.size()==(byTokenizer.size())) {
 				for(int i=0;i<byTokenizer.size();i++) {
-					if(!bySpace.get(i).equals(byTokenizer.get(i).text)) {
-						differences.put(line, bySpace.get(i)+" "+(byTokenizer.get(i).text));
+					if(!bySpace.get(i).equals(byTokenizer.get(i).getText())) {
+						differences.put(line, bySpace.get(i)+" "+(byTokenizer.get(i).getText()));
 					}
 
 				}
@@ -122,11 +122,11 @@ public class TestNewTokenizerController {
 				String word = i>=bySpace.size()?
 						"-":bySpace.get(i);
 				TokenizationResults parse2 = this.tokenizator.parse(word);
-				System.out.println(word+" -> "+parse2.getTokens().get(0).lemma+" ["+byTokenizer.get(i).text+" -> "+byTokenizer.get(i).lemma+"]");
+				System.out.println(word+" -> "+parse2.getTokens().get(0).getLemma()+" ["+byTokenizer.get(i).getText()+" -> "+byTokenizer.get(i).getLemma()+"]");
 
-				if((byTokenizer.get(i).text.indexOf(word)>0||word.indexOf(byTokenizer.get(i).text)>0)&&!parse2.getTokens().get(0).lemma.equals(byTokenizer.get(i).lemma)) {
+				if((byTokenizer.get(i).getText().indexOf(word)>0||word.indexOf(byTokenizer.get(i).getText())>0)&&!parse2.getTokens().get(0).getLemma().equals(byTokenizer.get(i).getLemma())) {
 
-					System.out.println("err "+word+" -> "+parse2.getTokens().get(0).lemma+" ["+byTokenizer.get(i).text+" -> "+byTokenizer.get(i).lemma+"]");
+					System.out.println("err "+word+" -> "+parse2.getTokens().get(0).getLemma()+" ["+byTokenizer.get(i).getText()+" -> "+byTokenizer.get(i).getLemma()+"]");
 				}					
 
 			}
@@ -167,11 +167,11 @@ public class TestNewTokenizerController {
 				String word = i>=bySpace.size()?
 						"-":bySpace.get(i);
 				TokenizationResults parse2 = this.tokenizator.parse(word);
-				System.out.println(word+" -> "+parse2.getTokens().get(0).tag+" ["+byTokenizer.get(i).text+" -> "+byTokenizer.get(i).tag+"]");
+				System.out.println(word+" -> "+parse2.getTokens().get(0).getTag()+" ["+byTokenizer.get(i).getText()+" -> "+byTokenizer.get(i).getTag()+"]");
 
-				if((byTokenizer.get(i).text.indexOf(word)>=0||word.indexOf(byTokenizer.get(i).text)>=0)&&!parse2.getTokens().get(0).tag.equals(byTokenizer.get(i).tag)) {
+				if((byTokenizer.get(i).getText().indexOf(word)>=0||word.indexOf(byTokenizer.get(i).getText())>=0)&&!parse2.getTokens().get(0).getTag().equals(byTokenizer.get(i).getTag())) {
 
-					System.out.println("err "+word+" -> "+parse2.getTokens().get(0).tag+" ["+byTokenizer.get(i).text+" -> "+byTokenizer.get(i).tag+"]");
+					System.out.println("err "+word+" -> "+parse2.getTokens().get(0).getTag()+" ["+byTokenizer.get(i).getText()+" -> "+byTokenizer.get(i).getTag()+"]");
 				}					
 
 			}
