@@ -1,8 +1,16 @@
 package mariusz.ambroziak.kassistant.ai.logic;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +33,7 @@ public class WordClasifier {
 	private static String convertApiCheckRegex=".*[a-zA-Z].*";
 	private static String punctuationRegex="[\\.,\\-]*";
 
-	
+
 	@Autowired
 	private WordsApiClient wordsApiClient;
 
@@ -68,33 +76,36 @@ public class WordClasifier {
 		quantityTypeKeywords.add("small indefinite quantity");
 		quantityTypeKeywords.add("weight unit");
 		quantityTypeKeywords.add("capacity unit");
-		
-		
 
-		
+
+
+
 
 
 	}
 
-//	public WordType classifyWord(Token t) throws WordNotFoundException {
-//		TokenizationResults empty=new TokenizationResults();
-//		empty.setPhrase("");
-//		empty.setTokens(new ArrayList<Token>());
-//		return classifyWord(empty , t);
-//	
-//	}
+	//	public WordType classifyWord(Token t) throws WordNotFoundException {
+	//		TokenizationResults empty=new TokenizationResults();
+	//		empty.setPhrase("");
+	//		empty.setTokens(new ArrayList<Token>());
+	//		return classifyWord(empty , t);
+	//	
+	//	}
 
 	public List<QualifiedToken> calculateWordsType(ParsingProcessObject parsingAPhrase) {
-		List<QualifiedToken> retValue=new ArrayList<QualifiedToken>();
+		Map<String,QualifiedToken> wordToResultMap=new HashMap<String,QualifiedToken>();
+		parsingAPhrase.setIndex(0);
 
-		for(int i=0;i<parsingAPhrase.getEntitylessTokenized().getTokens().size();i++) {
-			Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(i);
+		//for(int i=0;i<parsingAPhrase.getEntitylessTokenized().getTokens().size();i++) {
+		while(!parsingAPhrase.isOver()) {
+			Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(parsingAPhrase.getIndex());
 			WordType chosenType = null;
 
 			if(PythonSpacyLabels.tokenisationCardinalLabel.equals(t.getTag())) {
 				chosenType=WordType.QuantityElement;
-				List<NamedEntity> cardinalEntities = parsingAPhrase.getCardinalEntities();
+				parsingAPhrase.setIndex(parsingAPhrase.getIndex()+1);
 
+				List<NamedEntity> cardinalEntities = parsingAPhrase.getCardinalEntities();
 				for(NamedEntity cardinalEntity:cardinalEntities) {
 					if(cardinalEntity.getText().contains(t.getText())){
 						if(!PythonSpacyLabels.entitiesCardinalLabel.equals(cardinalEntity.getLabel())) {
@@ -107,7 +118,7 @@ public class WordClasifier {
 			}else {
 
 				try {
-					chosenType = classifyWord(parsingAPhrase.getEntitylessTokenized(),i);
+					chosenType = classifyWord(parsingAPhrase,wordToResultMap);
 
 				} catch (WordNotFoundException e) {
 					// TODO Auto-generated catch block
@@ -119,24 +130,29 @@ public class WordClasifier {
 
 
 
-			retValue.add(new QualifiedToken(t, chosenType));
+			wordToResultMap.put(t.getText(), new QualifiedToken(t, chosenType));
 		}
-		parsingAPhrase.setFinalResults(retValue);
-		return retValue;
+
+		QualifiedToken[] array = wordToResultMap.values().toArray(new QualifiedToken[]{});
+
+		List<QualifiedToken> asList = Arrays.asList(array);
+		parsingAPhrase.setFinalResults(asList);
+		return asList;
 
 	}
-	
-	public WordType classifyWord(TokenizationResults tokens, int index) throws WordNotFoundException {
-		Token t=tokens.getTokens().get(index);
+
+	public WordType classifyWord(ParsingProcessObject parsingAPhrase, Map<String, QualifiedToken> wordToResultMap) throws WordNotFoundException {
+
+		Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(parsingAPhrase.getIndex());
 		WordType retValue=null;
 		String token=t.getText();
 		String lemma=t.getLemma();
-		
-		
+
+
 		if(Pattern.matches(punctuationRegex, token)) {
 			return WordType.PunctuationElement;
 		}
-		
+
 		ArrayList<WordsApiResult> wordResults = wordsApiClient.searchFor(token);
 
 		if(wordResults==null||wordResults.isEmpty()) {
@@ -181,15 +197,20 @@ public class WordClasifier {
 		if(wordResults!=null&&!wordResults.isEmpty()) {
 			WordsApiResult quantityTypeRecognized = checkQuantityTypesForWordObject(wordResults);
 			if(quantityTypeRecognized!=null) {
-				return WordType.QuantityElement;
+				parsingAPhrase.setIndex(parsingAPhrase.getIndex()+1);	return WordType.QuantityElement;
 			} else {
 				WordsApiResult productTypeRecognized = checkProductTypesForWordObject(wordResults);
-				if(productTypeRecognized==null) {
+				if(productTypeRecognized!=null) {
+
+					checkOtherTokens(parsingAPhrase,productTypeRecognized,wordToResultMap);
+
+
+
 					return WordType.ProductElement;
-					
-					
-					
+
 				}else {
+					parsingAPhrase.setIndex(parsingAPhrase.getIndex()+1);
+
 					return null;
 				}
 			}
@@ -202,6 +223,67 @@ public class WordClasifier {
 	}
 
 
+
+	private int checkOtherTokens(ParsingProcessObject parsingAPhrasex, WordsApiResult productTypeRecognized,
+			Map<String, QualifiedToken> wordToResultMap) {
+
+		TokenizationResults tokens=parsingAPhrasex.getEntitylessTokenized();
+		int index=parsingAPhrasex.getIndex();
+		List<String> setOfRelevantWords=new ArrayList<String>();
+
+		setOfRelevantWords.addAll(productTypeRecognized.getChildTypes());
+		setOfRelevantWords.addAll(productTypeRecognized.getSynonyms());
+		setOfRelevantWords.sort(Collections.reverseOrder());
+		for(String expandedWordFromApi:setOfRelevantWords) {
+			//check if it exists
+			if(tokens.getPhrase().indexOf(expandedWordFromApi)>=0){
+				//check if it exists in the right place
+				int expandedWordFromApiLength=expandedWordFromApi.split(" ").length;
+				List<Token> actualTokens = tokens.getTokens();
+				//does it start before current index?
+
+				if(expandedWordFromApiLength>1) {
+					if(index-expandedWordFromApiLength>=0) {
+						List<Token> subList =actualTokens.subList(index-expandedWordFromApiLength, index);
+						String fused=subList.stream().map(s->s.getText()).collect( Collectors.joining(" ") );
+						if(fused.indexOf(expandedWordFromApi)>=0) {
+							QualifiedToken result=new QualifiedToken(fused, "fused", "fused", WordType.ProductElement);
+							for(Token t:subList) {
+								wordToResultMap.remove(t.getText());
+
+							}
+
+							wordToResultMap.put(fused, result);
+							parsingAPhrasex.setIndex(index);
+							return index;
+
+						}
+						//does it end after current index?
+					}else if(expandedWordFromApiLength+index<=actualTokens.size()) {
+						List<Token> subList = actualTokens.subList(index, expandedWordFromApiLength+index);
+						String fused=subList.stream().map(s->s.getText()).collect( Collectors.joining(" ") );
+						if(fused.indexOf(expandedWordFromApi)>=0) {
+							QualifiedToken result=new QualifiedToken(fused, "fused", "fused", WordType.ProductElement);
+							index+=expandedWordFromApiLength-1;
+							wordToResultMap.put(fused, result);
+							parsingAPhrasex.setIndex(index);
+							return index;
+
+						}
+					}else {
+						System.err.println("well, we got some word in the middle of sentence case in word api");
+					}
+				}else {
+					parsingAPhrasex.setIndex(parsingAPhrasex.getIndex()+1);
+
+				}
+			}
+
+		}
+
+		return index;
+
+	}
 
 	private static WordsApiResult checkProductTypesForWordObject(ArrayList<WordsApiResult> wordResults) {
 		for(WordsApiResult war:wordResults) {

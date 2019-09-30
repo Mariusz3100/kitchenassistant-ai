@@ -17,11 +17,22 @@ public class ParsingProcessObject {
 	private List<QualifiedToken> finalResults;
 	
 	
+	private int index;
 	
 	
 	
+	public boolean isOver() {
+		return entitylessTokenized==null
+				||entitylessTokenized.getTokens()==null
+				||index>=entitylessTokenized.getTokens().size();
+	}
 	
-	
+	public int getIndex() {
+		return index;
+	}
+	public void setIndex(int index) {
+		this.index = index;
+	}
 	public List<QualifiedToken> getFinalResults() {
 		return finalResults;
 	}
