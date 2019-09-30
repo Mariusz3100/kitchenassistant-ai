@@ -128,6 +128,10 @@ public class WordsApiClient extends RapidApiClient {
 			JSONObject jsonSingleResult) {
 		String partOfSpeech="";
 		ArrayList<String> typeOf=new ArrayList<String>();
+		ArrayList<String> synonyms=new ArrayList<String>();
+		ArrayList<String> hasTypes=new ArrayList<String>();
+
+		
 		
 		if(jsonSingleResult.has("partOfSpeech")&&!jsonSingleResult.get("partOfSpeech").equals(JSONObject.NULL)) {
 			partOfSpeech=jsonSingleResult.getString("partOfSpeech");
@@ -140,6 +144,14 @@ public class WordsApiClient extends RapidApiClient {
 			
 			typeOf=parseJsonArrayOfStrings(jsonArray);
 		}
+
+		if(jsonSingleResult.has("synonyms")&&!jsonSingleResult.get("synonyms").equals(JSONObject.NULL)) {
+			JSONArray jsonArray = jsonSingleResult.getJSONArray("synonyms");
+			
+			synonyms=parseJsonArrayOfStrings(jsonArray);
+		}
+		
+		
 		
 		if(jsonSingleResult.has("hasTypes")) {
 			try {
@@ -153,7 +165,14 @@ public class WordsApiClient extends RapidApiClient {
 		}
 		String definition=jsonSingleResult.getString("definition");
 
-		WordsApiResult parsingResult=new WordsApiResult(phrase, baseWord, definition,typeOf, partOfSpeech,childTypes);
+		WordsApiResult parsingResult=new WordsApiResult();
+		parsingResult.setBaseWord(baseWord);
+		parsingResult.setChildTypes(childTypes);
+		parsingResult.setDefinition(definition);
+		parsingResult.setOriginalWord(phrase);
+		parsingResult.setPartOfSpeech(partOfSpeech);
+		parsingResult.setSynonyms(synonyms);
+		parsingResult.setTypeOf(typeOf);
 		return parsingResult;
 	}
 

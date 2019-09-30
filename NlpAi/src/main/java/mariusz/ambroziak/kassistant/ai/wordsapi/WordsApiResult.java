@@ -8,21 +8,36 @@ public class WordsApiResult {
 	private String baseWord;
 	private String definition;
 	private ArrayList<String> typeOf;
+	private ArrayList<String> synonyms;
+	
+	
+	
 
 
+	public ArrayList<String> getSynonyms() {
+		return synonyms;
+	}
+	public void setSynonyms(ArrayList<String> synonyms) {
+		this.synonyms = synonyms;
+	}
 	private String partOfSpeech;
 	private ArrayList<String> childTypes;
 	
 	
-	public WordsApiResult(String originalWord, String baseWord, String definition, ArrayList<String> typeOf, String partOfSpeech,
-			ArrayList<String> childTypes) {
+
+	public WordsApiResult(String originalWord, String baseWord, String partOfSpeech,String definition, ArrayList<String> typeOf,
+			 ArrayList<String> synonyms,  ArrayList<String> childTypes) {
 		super();
 		this.originalWord = originalWord;
 		this.baseWord = baseWord;
 		this.definition = definition;
 		this.typeOf = typeOf;
+		this.synonyms = synonyms;
 		this.partOfSpeech = partOfSpeech;
 		this.childTypes = childTypes;
+	}
+	public WordsApiResult() {
+		// TODO Auto-generated constructor stub
 	}
 	public ArrayList<String> getTypeOf() {
 		return typeOf;
