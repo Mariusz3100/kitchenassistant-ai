@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
@@ -81,8 +82,11 @@ public class IngredientPhraseParser {
 
 			TokenizationResults tokens = this.tokenizator.parse(entitylessString);
 			parsingAPhrase.setEntitylessTokenized(tokens);
+			
+			parsingAPhrase.setFinalResults(new ArrayList<QualifiedToken>());
+			
 
-			List<QualifiedToken> results=this.wordClasifier.calculateWordsType(parsingAPhrase);
+			this.wordClasifier.calculateWordsType(parsingAPhrase);
 
 
 
@@ -92,7 +96,7 @@ public class IngredientPhraseParser {
 //
 //				tokensString+=t.text+" | ";
 //			}
-			ParsingResult singleResult = createResultObject(line, entitiesString, entitylessString, results);
+			ParsingResult singleResult = createResultObject(parsingAPhrase);
 
 			retValue.addResult(singleResult);
 
@@ -101,6 +105,23 @@ public class IngredientPhraseParser {
 
 		return retValue;
 
+	}
+
+
+
+
+	private ParsingResult createResultObject(ParsingProcessObject parsingAPhrase) {
+		ParsingResult object=new ParsingResult();
+		object.setOriginalPhrase(parsingAPhrase.getInputPhrase());
+		object.setTokens(parsingAPhrase.getFinalResults());
+		
+		String fused=parsingAPhrase.getCardinalEntities().stream().map(s->s.getText()).collect( Collectors.joining(" ") );
+
+		
+		object.setEntities(fused);
+		object.setEntityLess(parsingAPhrase.getEntitylessString());
+//		object.setTokenString(tokensString);
+		return object;
 	}
 
 
