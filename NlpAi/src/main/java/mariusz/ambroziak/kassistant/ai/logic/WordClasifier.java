@@ -22,6 +22,7 @@ import mariusz.ambroziak.kassistant.ai.wordsapi.ConvertApiClient;
 import mariusz.ambroziak.kassistant.ai.wordsapi.WordNotFoundException;
 import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiClient;
 import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiResult;
+import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiResultImpostor;
 
 @Service
 public class WordClasifier {
@@ -132,17 +133,12 @@ public class WordClasifier {
 	
 	public void classifyWord(ParsingProcessObject parsingAPhrase, int index, Map<Integer, WordType> futureTokens) throws WordNotFoundException {
 		if(futureTokens.containsKey(index)) {
-			 WordType wordType = futureTokens.get(index);
 			 return;
 		 }
 		
-		
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
 		Token t=tokens.getTokens().get(index);
-		WordType retValue=null;
 		String token=t.getText();
-		String lemma=t.getLemma();
-		
 		
 		if(Pattern.matches(punctuationRegex, token)) {
 			addResult(parsingAPhrase,index,new QualifiedToken(t,WordType.PunctuationElement));
@@ -150,8 +146,32 @@ public class WordClasifier {
 			return;
 		}
 		
-		ArrayList<WordsApiResult> wordResults = wordsApiClient.searchFor(token);
+		ArrayList<WordsApiResult> wordResults = searchForAllPossibleMeaningsInWordsApi(parsingAPhrase, index, t);
+		if(wordResults!=null&&!wordResults.isEmpty()) {
+			WordsApiResult quantityTypeRecognized = checkQuantityTypesForWordObject(wordResults);
+			if(quantityTypeRecognized!=null) {
+				addQuantityResult(parsingAPhrase, index, t);
+			} else {
+				WordsApiResult productTypeRecognized = checkProductTypesForWordObject(wordResults);
+				if(productTypeRecognized!=null) {
+					checkOtherTokens(parsingAPhrase,index ,productTypeRecognized,futureTokens);
+				}else {
+					addResult(parsingAPhrase, index, new QualifiedToken(t,null));
+				}
+			}
+		}
 
+
+
+
+	}
+
+	private ArrayList<WordsApiResult> searchForAllPossibleMeaningsInWordsApi(ParsingProcessObject parsingAPhrase,
+			int index, Token t) throws WordNotFoundException {
+		 String token=t.getText();
+		 String lemma=t.getLemma();
+		
+		ArrayList<WordsApiResult> wordResults = wordsApiClient.searchFor(token);
 		if(wordResults==null||wordResults.isEmpty()) {
 
 			if(lemma!=null&&!lemma.isEmpty()&&!lemma.equals("O"))
@@ -183,7 +203,9 @@ public class WordClasifier {
 				QuantityTranslation checkForTranslation = convertClient.checkForTranslation(token);
 				if(checkForTranslation!=null) {
 					addQuantityResult(parsingAPhrase,index,t);
-					return;
+					WordsApiResult war=new WordsApiResultImpostor(checkForTranslation);
+					wordResults.add(war);
+					return wordResults;
 				}
 			}
 			if(baseWord!=null&&!baseWord.isEmpty())
@@ -191,31 +213,7 @@ public class WordClasifier {
 				wordResults = wordsApiClient.searchFor(baseWord);
 			}
 		}
-
-		if(wordResults!=null&&!wordResults.isEmpty()) {
-			WordsApiResult quantityTypeRecognized = checkQuantityTypesForWordObject(wordResults);
-			if(quantityTypeRecognized!=null) {
-				addQuantityResult(parsingAPhrase, index, t);
-			} else {
-				WordsApiResult productTypeRecognized = checkProductTypesForWordObject(wordResults);
-				if(productTypeRecognized!=null) {
-					 
-					
-					checkOtherTokens(parsingAPhrase,index ,productTypeRecognized,futureTokens);
-					
-					
-					
-					
-					
-				}else {
-					addResult(parsingAPhrase, index, new QualifiedToken(t,null));
-				}
-			}
-		}
-
-
-
-
+		return wordResults;
 	}
 
 	private void addQuantityResult(ParsingProcessObject parsingAPhrase, int index, Token t) {
@@ -234,11 +232,9 @@ public class WordClasifier {
 
 	private void checkOtherTokens(ParsingProcessObject parsingAPhrase, int index,WordsApiResult productTypeRecognized,
 			Map<Integer, WordType> futureTokens) {
-		boolean compoundFound=false;
 		if(futureTokens.containsKey(index)) {
 			return;
 		}
-	
 
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
 		List<String> setOfRelevantWords=new ArrayList<String>();
