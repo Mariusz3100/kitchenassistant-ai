@@ -35,4 +35,9 @@ public class QualifiedToken extends Token {
 		return "Token [text=" + super.getText() + ", lemma=" + super.getLemma() + ", tag=" + super.getTag()+ ", wordType=" + wordType + "]";
 	}
 
+	public static QualifiedToken createMerged() {
+		return new QualifiedToken("", "", "", WordType.Merged);
+	}
+	
+	
 }
