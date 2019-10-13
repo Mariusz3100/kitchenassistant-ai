@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.MultiValuedMap;
@@ -46,6 +47,12 @@ public class IngredientPhraseParser {
 	@Autowired
 	private WordClasifier wordClasifier;
 
+	
+	
+	
+	
+	private String spacelessRegex="(\\d+)(\\w+)";
+	
 	public IngredientPhraseParser(TokenizationClientService tokenizator,
 			NamedEntityRecognitionClientService nerRecognizer, ResourceLoader resourceLoader) {
 		super();
@@ -141,12 +148,19 @@ public class IngredientPhraseParser {
 	}
 
 
-	private static String correctErrors(String phrase) {
+	private String correctErrors(String phrase) {
 
 		phrase=phrase.replaceFirst("½", "1/2");
 		phrase=phrase.replaceFirst("¼", "1/4");
 		
 		
+//		String replacedString=phrase.replaceAll(spacelessRegex, "$1 $2");
+//		
+//		
+//		if(!phrase.equals(replacedString)) {
+//			phrase=replacedString;
+//		}
+
 		
 		
 		if(phrase.substring(0, phrase.length()<10?phrase.length():10).indexOf(" c ")>0) {
