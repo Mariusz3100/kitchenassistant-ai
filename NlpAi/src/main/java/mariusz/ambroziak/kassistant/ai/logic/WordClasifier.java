@@ -202,8 +202,10 @@ public class WordClasifier {
 			{
 				QuantityTranslation checkForTranslation = convertClient.checkForTranslation(token);
 				if(checkForTranslation!=null) {
-					addQuantityResult(parsingAPhrase,index,t);
+					//addQuantityResult(parsingAPhrase,index,t);
 					WordsApiResult war=new WordsApiResultImpostor(checkForTranslation);
+					wordResults=new ArrayList<WordsApiResult>();
+
 					wordResults.add(war);
 					return wordResults;
 				}
@@ -303,7 +305,7 @@ public class WordClasifier {
 
 	private static WordsApiResult checkQuantityTypesForWordObject(ArrayList<WordsApiResult> wordResults) {
 		for(WordsApiResult war:wordResults) {
-			if(checkIfTypesContainKeywords(war.getOriginalWord(),war.getTypeOf(),quantityTypeKeywords)) {
+			if(war instanceof WordsApiResultImpostor||checkIfTypesContainKeywords(war.getOriginalWord(),war.getTypeOf(),quantityTypeKeywords)) {
 				return war;
 			}
 		}
