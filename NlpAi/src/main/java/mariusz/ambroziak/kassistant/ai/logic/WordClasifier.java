@@ -60,9 +60,6 @@ public class WordClasifier {
 		productTypeKeywords.add("food");
 
 
-
-
-
 		irrelevanceKeywords=new ArrayList<String>();
 		irrelevanceKeywords.add("activity");
 		irrelevanceKeywords.add("love");
@@ -74,61 +71,34 @@ public class WordClasifier {
 		quantityTypeKeywords.add("weight unit");
 		quantityTypeKeywords.add("capacity unit");
 		
-		
-
-		
-
-
 	}
 
-//	public WordType classifyWord(Token t) throws WordNotFoundException {
-//		TokenizationResults empty=new TokenizationResults();
-//		empty.setPhrase("");
-//		empty.setTokens(new ArrayList<Token>());
-//		return classifyWord(empty , t);
-//	
-//	}
 
 	public void calculateWordsType(ParsingProcessObject parsingAPhrase) {
-		List<QualifiedToken> retValue=new ArrayList<QualifiedToken>();
 		Map<Integer,WordType> futureTokens=new HashMap<Integer,WordType>();
 		for(int i=0;i<parsingAPhrase.getEntitylessTokenized().getTokens().size();i++) {
 			Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(i);
-			WordType chosenType = null;
 
 			if(PythonSpacyLabels.tokenisationCardinalLabel.equals(t.getTag())) {
-				chosenType=WordType.QuantityElement;
 				addQuantityResult(parsingAPhrase,i, t);
-
 				List<NamedEntity> cardinalEntities = parsingAPhrase.getCardinalEntities();
 
 				for(NamedEntity cardinalEntity:cardinalEntities) {
 					if(cardinalEntity.getText().contains(t.getText())){
 						if(!PythonSpacyLabels.entitiesCardinalLabel.equals(cardinalEntity.getLabel())) {
 							System.err.println("Tokenization and Ner labels do not match");
-							chosenType=null;
-
 						}
 					}
 				}
 			}else {
-
 				try {
 					classifyWord(parsingAPhrase,i,futureTokens);
-
 				} catch (WordNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-
-
 			}
-
-
-
 		}
-
-
 	}
 	
 	public void classifyWord(ParsingProcessObject parsingAPhrase, int index, Map<Integer, WordType> futureTokens) throws WordNotFoundException {
@@ -160,9 +130,6 @@ public class WordClasifier {
 				}
 			}
 		}
-
-
-
 
 	}
 
@@ -202,7 +169,6 @@ public class WordClasifier {
 			{
 				QuantityTranslation checkForTranslation = convertClient.checkForTranslation(token);
 				if(checkForTranslation!=null) {
-					//addQuantityResult(parsingAPhrase,index,t);
 					WordsApiResult war=new WordsApiResultImpostor(checkForTranslation);
 					wordResults=new ArrayList<WordsApiResult>();
 

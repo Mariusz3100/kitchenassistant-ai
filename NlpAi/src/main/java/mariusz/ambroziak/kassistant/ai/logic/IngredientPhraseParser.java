@@ -75,9 +75,6 @@ public class IngredientPhraseParser {
 			NerResults entitiesFound = this.nerRecognizer.find(line);
 			parsingAPhrase.setEntities(entitiesFound);
 
-
-
-			String entitiesString = createEntitiesString(entitiesFound);
 			String entitylessString=parsingAPhrase.getEntitylessString();
 
 			TokenizationResults tokens = this.tokenizator.parse(entitylessString);
@@ -89,13 +86,6 @@ public class IngredientPhraseParser {
 			this.wordClasifier.calculateWordsType(parsingAPhrase);
 
 
-
-
-	//		String tokensString="Not used anymore ";
-//			for(QualifiedToken t:results){
-//
-//				tokensString+=t.text+" | ";
-//			}
 			ParsingResult singleResult = createResultObject(parsingAPhrase);
 
 			retValue.addResult(singleResult);
@@ -120,7 +110,6 @@ public class IngredientPhraseParser {
 		
 		object.setEntities(fused);
 		object.setEntityLess(parsingAPhrase.getEntitylessString());
-//		object.setTokenString(tokensString);
 		return object;
 	}
 
@@ -148,7 +137,6 @@ public class IngredientPhraseParser {
 		object.setTokens(results);
 		object.setEntities(entitiesString);
 		object.setEntityLess(entitylessString);
-//		object.setTokenString(tokensString);
 		return object;
 	}
 
@@ -157,11 +145,13 @@ public class IngredientPhraseParser {
 
 		phrase=phrase.replaceFirst("½", "1/2");
 		phrase=phrase.replaceFirst("¼", "1/4");
+		
+		
+		
+		
 		if(phrase.substring(0, phrase.length()<10?phrase.length():10).indexOf(" c ")>0) {
 			phrase=phrase.replaceFirst(" c ", " cup ");
 		}
-
-
 
 		return phrase;
 	}
