@@ -153,18 +153,17 @@ public class IngredientPhraseParser {
 		phrase=phrase.replaceFirst("½", "1/2");
 		phrase=phrase.replaceFirst("¼", "1/4");
 		
-		
-//		String replacedString=phrase.replaceAll(spacelessRegex, "$1 $2");
-//		
-//		
-//		if(!phrase.equals(replacedString)) {
-//			phrase=replacedString;
-//		}
-
-		
+		String replacedString=phrase.replaceAll(spacelessRegex, "$1 $2");
+		if(!phrase.equals(replacedString)) {
+			phrase=replacedString;
+		}
 		
 		if(phrase.substring(0, phrase.length()<10?phrase.length():10).indexOf(" c ")>0) {
 			phrase=phrase.replaceFirst(" c ", " cup ");
+		}
+		
+		if(phrase.substring(0, phrase.length()<10?phrase.length():10).indexOf(" & ")>0) {
+			phrase=phrase.replaceFirst(" & ", " and ");
 		}
 
 		return phrase;
