@@ -58,6 +58,7 @@ public class WordClasifier {
 		productTypeKeywords.add("dairy");
 		productTypeKeywords.add("meat");
 		productTypeKeywords.add("food");
+		productTypeKeywords.add("sweetener");
 
 
 		irrelevanceKeywords=new ArrayList<String>();
@@ -226,7 +227,7 @@ public class WordClasifier {
 						if(fused.indexOf(expandedWordFromApi)>=0) {
 							QualifiedToken result=new QualifiedToken(fused, "fused", "fused", WordType.ProductElement);
 							for(int i=index-expandedWordFromApiLength+1;i<index;i++) {
-								parsingAPhrase.getFinalResults().set(i, QualifiedToken.createMerged());
+								parsingAPhrase.getFinalResults().set(i, QualifiedToken.createEmptyElementAfterMerged());
 
 							}
 							addResult(parsingAPhrase, index, result);
@@ -238,7 +239,7 @@ public class WordClasifier {
 						List<Token> subList = actualTokens.subList(index, expandedWordFromApiLength+index);
 						String fused=subList.stream().map(s->s.getText()).collect( Collectors.joining(" ") );
 						if(fused.indexOf(expandedWordFromApi)>=0) {
-							QualifiedToken result=new QualifiedToken(fused, "fused", "fused", WordType.ProductElement);
+							QualifiedToken result=QualifiedToken.createMerged(fused,WordType.ProductElement);
 							
 							for(int i=index;i<expandedWordFromApiLength+index;i++) {
 								futureTokens.put(i, WordType.ProductElement);

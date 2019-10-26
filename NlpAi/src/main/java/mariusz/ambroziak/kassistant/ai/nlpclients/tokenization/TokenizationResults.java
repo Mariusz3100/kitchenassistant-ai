@@ -8,6 +8,16 @@ public class TokenizationResults {
 	
 	private String phrase;
 	
+	private DependencyTreeNode dependencyTree;
+	
+	public DependencyTreeNode getDependencyTree() {
+		return dependencyTree;
+	}
+
+	public void setDependencyTree(DependencyTreeNode dependencyTree) {
+		this.dependencyTree = dependencyTree;
+	}
+
 	public String getPhrase() {
 		return phrase;
 	}

@@ -7,7 +7,32 @@ public class Token {
 	private String text;
 	private String lemma;
 	private String tag;
+	private String relationToParentType;
+	private String pos;
+	private String head;
 
+	
+	public String getHead() {
+		return head;
+	}
+	public void setHead(String head) {
+		this.head = head;
+	}
+
+		
+	
+	public String getRelationToParentType() {
+		return relationToParentType;
+	}
+	public void setRelationToParentType(String relationToParent) {
+		this.relationToParentType = relationToParent;
+	}
+	public String getPos() {
+		return pos;
+	}
+	public void setPos(String pos) {
+		this.pos = pos;
+	}
 	@Override
 	public boolean equals(Object obj) {
 		if(!(obj instanceof Token))
@@ -24,9 +49,11 @@ public class Token {
 		// TODO Auto-generated method stub
 		return this.getText()==null?0:this.getText().hashCode();
 	}
+
 	@Override
 	public String toString() {
-		return "Token [text=" + text + ", lemma=" + lemma + ", tag=" + tag + "]";
+		return "Token [text=" + text + ", lemma=" + lemma + ", tag=" + tag + ", relationToParentType="
+				+ relationToParentType + ", pos=" + pos + ", head=" + head + "]";
 	}
 	public String getText() {
 		return text;
