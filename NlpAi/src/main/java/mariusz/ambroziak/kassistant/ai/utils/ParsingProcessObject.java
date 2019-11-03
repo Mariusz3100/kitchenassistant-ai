@@ -8,6 +8,7 @@ import mariusz.ambroziak.kassistant.ai.logic.PythonSpacyLabels;
 import mariusz.ambroziak.kassistant.ai.logic.QualifiedToken;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NerResults;
+import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
 
 public class ParsingProcessObject {
@@ -16,12 +17,33 @@ public class ParsingProcessObject {
 	private TokenizationResults entitylessTokenized;
 	private List<QualifiedToken> finalResults;
 	
+	private String quantityPhrase;
+	private String productPhrase;
+	private List<Token> correctedtokens;
 	
 	
 	
 	
 	
 	
+	public List<Token> getCorrectedtokens() {
+		return correctedtokens;
+	}
+	public void setCorrectedtokens(List<Token> correctedtokens) {
+		this.correctedtokens = correctedtokens;
+	}
+	public String getQuantityPhrase() {
+		return quantityPhrase;
+	}
+	public void setQuantityPhrase(String quantityPhrase) {
+		this.quantityPhrase = quantityPhrase;
+	}
+	public String getProductPhrase() {
+		return productPhrase;
+	}
+	public void setProductPhrase(String productPhrase) {
+		this.productPhrase = productPhrase;
+	}
 	public List<QualifiedToken> getFinalResults() {
 		return finalResults;
 	}
@@ -89,6 +111,11 @@ public class ParsingProcessObject {
 			retValue=retValue.replaceAll("( )+", " ");
 			return retValue;
 		}
+	}
+	
+	public String createCorrectedPhrase() {
+		
+		return this.getQuantityPhrase()+" of "+this.getProductPhrase();
 	}
 	
 	

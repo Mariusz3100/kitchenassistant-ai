@@ -117,6 +117,8 @@ public class IngredientPhraseParser {
 		
 		object.setEntities(fused);
 		object.setEntityLess(parsingAPhrase.getEntitylessString());
+		object.setCorrectedPhrase(parsingAPhrase.createCorrectedPhrase());
+		object.setCorrectedTokens(parsingAPhrase.getCorrectedtokens());
 		return object;
 	}
 

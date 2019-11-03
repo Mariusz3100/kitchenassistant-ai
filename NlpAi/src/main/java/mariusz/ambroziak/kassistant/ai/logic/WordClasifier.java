@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
+import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
 import mariusz.ambroziak.kassistant.ai.utils.ParsingProcessObject;
 import mariusz.ambroziak.kassistant.ai.utils.QuantityTranslation;
@@ -38,6 +39,8 @@ public class WordClasifier {
 	private WikipediaApiClient wikipediaClient;
 	@Autowired
 	private ConvertApiClient convertClient;
+	@Autowired
+	private TokenizationClientService tokenizator;
 
 
 	public static ArrayList<String> productTypeKeywords;
@@ -60,6 +63,7 @@ public class WordClasifier {
 		productTypeKeywords.add("food");
 		productTypeKeywords.add("sweetener");
 
+		
 
 		irrelevanceKeywords=new ArrayList<String>();
 		irrelevanceKeywords.add("activity");
@@ -72,10 +76,50 @@ public class WordClasifier {
 		quantityTypeKeywords.add("weight unit");
 		quantityTypeKeywords.add("capacity unit");
 		
+		
+		//presumably too specific ones:
+		productTypeKeywords.add("dressing");
+
+		
 	}
 
 
 	public void calculateWordsType(ParsingProcessObject parsingAPhrase) {
+		initialCategorization(parsingAPhrase);
+		
+		recategorize(parsingAPhrase);
+	}
+
+	private void recategorize(ParsingProcessObject parsingAPhrase) {
+		fillQuanAndProdPhrases(parsingAPhrase);
+		
+		TokenizationResults parsed = this.tokenizator.parse(parsingAPhrase.createCorrectedPhrase());
+		
+		parsingAPhrase.setCorrectedtokens(parsed.getTokens());
+		
+	}
+
+	private void fillQuanAndProdPhrases(ParsingProcessObject parsingAPhrase) {
+		String quantityPhrase="",productPhrase="";
+		for(int i=0;i<parsingAPhrase.getFinalResults().size();i++) {
+			QualifiedToken qt=parsingAPhrase.getFinalResults().get(i);
+			if(WordType.QuantityElement==qt.getWordType()&&productPhrase.equals("")) {
+				quantityPhrase+=qt.getText()+" ";
+			}else if(WordType.PunctuationElement==qt.getWordType()) {
+				//ignore
+			}else {
+				productPhrase+=qt.getText()+" ";
+			}
+			
+		}
+		productPhrase=productPhrase.trim();
+		quantityPhrase=quantityPhrase.trim();
+		
+		parsingAPhrase.setQuantityPhrase(quantityPhrase);
+		parsingAPhrase.setProductPhrase(productPhrase);
+	}
+
+	private void initialCategorization(ParsingProcessObject parsingAPhrase) {
 		Map<Integer,WordType> futureTokens=new HashMap<Integer,WordType>();
 		for(int i=0;i<parsingAPhrase.getEntitylessTokenized().getTokens().size();i++) {
 			Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(i);
