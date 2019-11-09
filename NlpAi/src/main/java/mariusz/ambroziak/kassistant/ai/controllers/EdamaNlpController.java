@@ -1,8 +1,11 @@
 package mariusz.ambroziak.kassistant.ai.controllers;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.EdamamNlpResponseData;
@@ -28,11 +31,12 @@ public class EdamaNlpController {
     	
     }
 	
-	@RequestMapping("/edamanNlpParseAndSave")
-    public String springTokenize(@RequestParam(value="param", defaultValue="") String param){
+	@ResponseBody
+	@RequestMapping("/retrieveEdamanParsingDataFromFileSequentially")
+    public String edamanNlpParseAndSave() throws IOException{
 
-		EdamamNlpResponseData retValue=this.service.find(param);
-    	return retValue.toJsonString();
+		this.service.retrieveEdamanParsingDataFromFileSequentially();;
+    	return "Done";
     	
     }
 
