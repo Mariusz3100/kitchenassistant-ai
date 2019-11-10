@@ -47,19 +47,19 @@ public class EdamanIngredientParsingService {
 		
 		this.resourceLoader = resourceLoader;
 		
-		this.inputFileResource=this.resourceLoader.getResource("classpath:/teachingResources/wordsInput");
-		this.expectedOutputFileResource=this.resourceLoader.getResource("classpath:/teachingResources/edamanOutput.csv");
+	//	this.inputFileResource=this.resourceLoader.getResource("classpath:/teachingResources/wordsInput");
+		this.expectedOutputFileResource=this.resourceLoader.getResource("classpath:/teachingResources/wordsOutput");
 		
 
 	}
 
-	public List<ExpectedResult> retrieveDataFromFile() throws IOException {
+	public List<LearningTuple> retrieveDataFromFile() throws IOException {
 		InputStream inputStream = expectedOutputFileResource.getInputStream();
 		BufferedReader br=new BufferedReader(new InputStreamReader(inputStream));
 
 
 		String line=br.readLine();
-		List<ExpectedResult> listOfExpectedResults=new ArrayList<ExpectedResult>();
+		List<LearningTuple> listOfExpectedResults=new ArrayList<LearningTuple>();
 		
 		while(line!=null) {
 			String[] elements=line.split(";");
@@ -67,12 +67,12 @@ public class EdamanIngredientParsingService {
 			String phrase=elements[0];
 			String foodFound=elements[1];
 			String multiplierString=elements[2];
-			String containerPhraseString=elements[2];
+			String containerPhraseString=elements[3];
 
 			
 			float multiplier=Float.parseFloat(multiplierString);
 			PreciseQuantity pq=EdamanApiQuantityExtractor.getResultingQuantity(multiplier,containerPhraseString);
-			ExpectedResult er=new ExpectedResult(pq.getAmount(), containerPhraseString, foodFound,pq.getType());
+			LearningTuple er=new LearningTuple(phrase,pq.getAmount(), containerPhraseString, foodFound,pq.getType());
 
 			listOfExpectedResults.add(er);
 			
@@ -115,7 +115,7 @@ public class EdamanIngredientParsingService {
 	}
 	
 	
-	public void retrieveEdamanParsingDataFromFile() throws IOException {
+	public void retrieveAndSaveEdamanParsingDataFromFile() throws IOException {
 		List<String> lines = readAllIngredientLines();
 		
 		EdamamNlpResponseData found = this.findInApi(lines);

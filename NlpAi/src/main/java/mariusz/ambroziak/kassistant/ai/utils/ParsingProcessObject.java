@@ -3,6 +3,7 @@ package mariusz.ambroziak.kassistant.ai.utils;
 import java.util.ArrayList;
 import java.util.List;
 
+import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.logic.ParsingResultList;
 import mariusz.ambroziak.kassistant.ai.logic.PythonSpacyLabels;
 import mariusz.ambroziak.kassistant.ai.logic.QualifiedToken;
@@ -12,7 +13,7 @@ import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
 
 public class ParsingProcessObject {
-	private String inputPhrase;
+	private LearningTuple learningCase;
 	private NerResults nerResults;
 	private TokenizationResults entitylessTokenized;
 	private List<QualifiedToken> finalResults;
@@ -50,16 +51,18 @@ public class ParsingProcessObject {
 	public void setFinalResults(List<QualifiedToken> finalResults) {
 		this.finalResults = finalResults;
 	}
-	public ParsingProcessObject(String inputPhrase) {
+	public ParsingProcessObject(LearningTuple er) {
 		super();
-		this.inputPhrase = inputPhrase;
+		this.learningCase=er;
 	}
-	public String getInputPhrase() {
-		return inputPhrase;
+
+	public LearningTuple getLearningTuple() {
+		return learningCase;
 	}
-	public void setInputPhrase(String inputPhrase) {
-		this.inputPhrase = inputPhrase;
+	public void setLearningTuple(LearningTuple expectedResult) {
+		this.learningCase = expectedResult;
 	}
+
 	public NerResults getEntities() {
 		return nerResults;
 	}
@@ -97,9 +100,9 @@ public class ParsingProcessObject {
 	}
 	public String getEntitylessString(){
 		NerResults allEntities=this.getEntities();
-		String retValue=inputPhrase;
+		String retValue=this.getLearningTuple().getOriginalPhrase();
 		if(allEntities==null||allEntities.getEntities()==null||allEntities.getEntities().isEmpty()) {
-			return this.getInputPhrase();
+			return retValue;
 		}else {
 			for(NamedEntity ner:allEntities.getEntities()) {
 				if(ner.getLabel().equals(PythonSpacyLabels.entitiesCardinalLabel)) {

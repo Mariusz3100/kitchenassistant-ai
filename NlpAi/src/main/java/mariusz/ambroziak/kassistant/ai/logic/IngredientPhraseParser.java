@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.ModelAndView;
 
 import ch.qos.logback.core.pattern.SpacePadder;
+import mariusz.ambroziak.kassistant.ai.edamam.nlp.EdamanIngredientParsingService;
+import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntityRecognitionClientService;
@@ -43,7 +45,8 @@ public class IngredientPhraseParser {
 	private NamedEntityRecognitionClientService nerRecognizer;
 	private ResourceLoader resourceLoader;
 	private Resource inputFileResource;
-
+	
+	private EdamanIngredientParsingService edamanNlpParsingService;
 	@Autowired
 	private WordClasifier wordClasifier;
 
@@ -53,13 +56,22 @@ public class IngredientPhraseParser {
 	
 	private String spacelessRegex="(\\d+)(\\w+)";
 	
+	
+
+
+
 	public IngredientPhraseParser(TokenizationClientService tokenizator,
-			NamedEntityRecognitionClientService nerRecognizer, ResourceLoader resourceLoader) {
+			NamedEntityRecognitionClientService nerRecognizer, ResourceLoader resourceLoader,
+			EdamanIngredientParsingService edamanNlpParsingService,
+			WordClasifier wordClasifier) {
 		super();
 		this.tokenizator = tokenizator;
 		this.nerRecognizer = nerRecognizer;
 		this.resourceLoader = resourceLoader;
-		this.inputFileResource=this.resourceLoader.getResource("classpath:/teachingResources/wordsInput");
+		this.inputFileResource = this.resourceLoader.getResource("classpath:/teachingResources/wordsInput");
+		this.edamanNlpParsingService = edamanNlpParsingService;
+		this.wordClasifier = wordClasifier;
+		this.spacelessRegex = spacelessRegex;
 	}
 
 
@@ -67,18 +79,13 @@ public class IngredientPhraseParser {
 
 	public ParsingResultList parseFromFile() throws IOException {
 		ParsingResultList retValue=new ParsingResultList();
-		InputStream inputStream = inputFileResource.getInputStream();
-		BufferedReader br=new BufferedReader(new InputStreamReader(inputStream));
 
+		List<LearningTuple> inputLines= edamanNlpParsingService.retrieveDataFromFile();
+		for(LearningTuple er:inputLines) {
+			String line=er.getOriginalPhrase();
 
-		String line=br.readLine();
-
-		while(line!=null) {
-			line=correctErrors(line);
-
-
-
-			ParsingProcessObject parsingAPhrase=new ParsingProcessObject(line);
+			ParsingProcessObject parsingAPhrase=new ParsingProcessObject(er);
+			
 			NerResults entitiesFound = this.nerRecognizer.find(line);
 			parsingAPhrase.setEntities(entitiesFound);
 
@@ -86,18 +93,16 @@ public class IngredientPhraseParser {
 
 			TokenizationResults tokens = this.tokenizator.parse(entitylessString);
 			parsingAPhrase.setEntitylessTokenized(tokens);
-			
 			parsingAPhrase.setFinalResults(new ArrayList<QualifiedToken>());
-			
 
 			this.wordClasifier.calculateWordsType(parsingAPhrase);
 
 
 			ParsingResult singleResult = createResultObject(parsingAPhrase);
-
+			
 			retValue.addResult(singleResult);
 
-			line=br.readLine();
+			
 		}
 
 		return retValue;
@@ -109,7 +114,7 @@ public class IngredientPhraseParser {
 
 	private ParsingResult createResultObject(ParsingProcessObject parsingAPhrase) {
 		ParsingResult object=new ParsingResult();
-		object.setOriginalPhrase(parsingAPhrase.getInputPhrase());
+		object.setOriginalPhrase(parsingAPhrase.getLearningTuple().getOriginalPhrase());
 		object.setTokens(parsingAPhrase.getFinalResults());
 		
 		String fused=parsingAPhrase.getCardinalEntities().stream().map(s->s.getText()).collect( Collectors.joining(" ") );
@@ -119,6 +124,7 @@ public class IngredientPhraseParser {
 		object.setEntityLess(parsingAPhrase.getEntitylessString());
 		object.setCorrectedPhrase(parsingAPhrase.createCorrectedPhrase());
 		object.setCorrectedTokens(parsingAPhrase.getCorrectedtokens());
+		object.setExpectedResult(parsingAPhrase.getLearningTuple());
 		return object;
 	}
 

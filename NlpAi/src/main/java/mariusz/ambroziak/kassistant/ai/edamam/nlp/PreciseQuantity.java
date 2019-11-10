@@ -31,7 +31,7 @@ public class PreciseQuantity {
 
 
 	public boolean isEmpty() {
-		if(getAmount()==-1&&getType()==AmountTypes.szt)
+		if(getAmount()==-1&&getType()==AmountTypes.pcs)
 			return true;
 		else 
 			return false;

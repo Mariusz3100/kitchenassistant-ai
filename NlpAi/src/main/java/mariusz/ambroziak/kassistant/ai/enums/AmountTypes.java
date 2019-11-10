@@ -6,7 +6,7 @@ import java.util.ArrayList;
 public enum AmountTypes {
 	ml("ml","ml"),
 	mg("mg","mg"),
-	szt("szt","pcs"),
+	pcs("szt","pc."),
 	kalorie("kcal","calories");
 	
 	
@@ -32,7 +32,7 @@ public enum AmountTypes {
 			}
 		}
 		System.err.println("unparsable amount type: "+name);
-		return AmountTypes.szt;
+		return AmountTypes.pcs;
 		
 	}
 	

@@ -21,7 +21,7 @@ public class EdamanApiQuantityExtractor {
 		
 		translations.put("mg",new QuantityTranslation(AmountTypes.mg, 1) );
 		translations.put("ml",new QuantityTranslation(AmountTypes.ml, 1) );
-		translations.put("szt",new QuantityTranslation(AmountTypes.szt, 1) );
+		translations.put("szt",new QuantityTranslation(AmountTypes.pcs, 1) );
 		translations.put("kcal",new QuantityTranslation(AmountTypes.kalorie, 1) );
 
 		
@@ -62,17 +62,17 @@ public class EdamanApiQuantityExtractor {
 		translations.put("ounce",new QuantityTranslation(AmountTypes.ml, 29.6f) );
 		translations.put("oz",new QuantityTranslation(AmountTypes.ml, 29.6f) );
 
-		translations.put("piece",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("pieces",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("pcs",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("clove",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("cloves",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("pack",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("bunch",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("sngl",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("sprig",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("whole",new QuantityTranslation(AmountTypes.szt, 1) );
-		translations.put("half",new QuantityTranslation(AmountTypes.szt, 0.5f) );
+		translations.put("piece",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("pieces",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("pcs",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("clove",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("cloves",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("pack",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("bunch",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("sngl",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("sprig",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("whole",new QuantityTranslation(AmountTypes.pcs, 1) );
+		translations.put("half",new QuantityTranslation(AmountTypes.pcs, 0.5f) );
 
 
 
@@ -86,7 +86,7 @@ public class EdamanApiQuantityExtractor {
 		
 		
 		if(quantityTranslation==null) {
-			return new PreciseQuantity(-1,AmountTypes.szt);
+			return new PreciseQuantity(-1,AmountTypes.pcs);
 		}else {
 			return new PreciseQuantity(amount*quantityTranslation.getMultiplier(),
 					quantityTranslation.targetAmountType);

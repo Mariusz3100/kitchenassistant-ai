@@ -2,13 +2,13 @@ package mariusz.ambroziak.kassistant.ai.logic;
 
 import java.util.List;
 
-import mariusz.ambroziak.kassistant.ai.edamam.nlp.ExpectedResult;
+import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 //class mainly for presenting in angular
 class ParsingResult{
 	private String originalPhrase;
-	private ExpectedResult expectedResult;
+	private LearningTuple expectedResult;
 	private String entities;
 	private String entityLess;
 	private String tokenString;
@@ -72,11 +72,11 @@ class ParsingResult{
 	public void setOriginalPhrase(String originalPhrase) {
 		this.originalPhrase = originalPhrase;
 	}
-	public ExpectedResult getExpectedResult() {
+	public LearningTuple getExpectedResult() {
 		return expectedResult;
 	}
 
-	public void setExpectedResult(ExpectedResult expectedResult) {
+	public void setExpectedResult(LearningTuple expectedResult) {
 		this.expectedResult = expectedResult;
 	}
 	
