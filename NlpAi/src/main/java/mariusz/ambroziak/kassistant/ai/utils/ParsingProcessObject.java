@@ -121,5 +121,11 @@ public class ParsingProcessObject {
 		return this.getQuantityPhrase()+" of "+this.getProductPhrase();
 	}
 	
+	public LearningTuple calculateResultFromCollectedData() {
+		LearningTuple retValue=new LearningTuple(productPhrase, 0, productPhrase, productPhrase, null);
+		
+		return retValue;
+	}
+	
 	
 }

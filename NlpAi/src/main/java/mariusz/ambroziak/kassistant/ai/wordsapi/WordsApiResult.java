@@ -9,11 +9,18 @@ public class WordsApiResult {
 	private String definition;
 	private ArrayList<String> typeOf;
 	private ArrayList<String> synonyms;
-	
+	private ArrayList<String> attribute;
+
 	
 	
 
 
+	public ArrayList<String> getAttribute() {
+		return attribute;
+	}
+	public void setAttribute(ArrayList<String> attribute) {
+		this.attribute = attribute;
+	}
 	public ArrayList<String> getSynonyms() {
 		return synonyms;
 	}
@@ -25,14 +32,16 @@ public class WordsApiResult {
 	
 	
 
-	public WordsApiResult(String originalWord, String baseWord, String partOfSpeech,String definition, ArrayList<String> typeOf,
-			 ArrayList<String> synonyms,  ArrayList<String> childTypes) {
+	public WordsApiResult(String originalWord, String baseWord, String definition, ArrayList<String> typeOf,
+			ArrayList<String> synonyms, ArrayList<String> attribute, String partOfSpeech,
+			ArrayList<String> childTypes) {
 		super();
 		this.originalWord = originalWord;
 		this.baseWord = baseWord;
 		this.definition = definition;
 		this.typeOf = typeOf;
 		this.synonyms = synonyms;
+		this.attribute = attribute;
 		this.partOfSpeech = partOfSpeech;
 		this.childTypes = childTypes;
 	}

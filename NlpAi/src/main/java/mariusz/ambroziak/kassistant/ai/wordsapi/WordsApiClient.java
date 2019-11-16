@@ -130,6 +130,7 @@ public class WordsApiClient extends RapidApiClient {
 		ArrayList<String> typeOf=new ArrayList<String>();
 		ArrayList<String> synonyms=new ArrayList<String>();
 		ArrayList<String> hasTypes=new ArrayList<String>();
+		ArrayList<String> attribute=new ArrayList<String>();
 
 		
 		
@@ -145,6 +146,12 @@ public class WordsApiClient extends RapidApiClient {
 			typeOf=parseJsonArrayOfStrings(jsonArray);
 		}
 
+		if(jsonSingleResult.has("attribute")&&!jsonSingleResult.get("attribute").equals(JSONObject.NULL)) {
+			JSONArray jsonArray = jsonSingleResult.getJSONArray("attribute");
+			
+			attribute=parseJsonArrayOfStrings(jsonArray);
+		}
+		
 		if(jsonSingleResult.has("synonyms")&&!jsonSingleResult.get("synonyms").equals(JSONObject.NULL)) {
 			JSONArray jsonArray = jsonSingleResult.getJSONArray("synonyms");
 			
@@ -172,6 +179,7 @@ public class WordsApiClient extends RapidApiClient {
 		parsingResult.setOriginalWord(phrase);
 		parsingResult.setPartOfSpeech(partOfSpeech);
 		parsingResult.setSynonyms(synonyms);
+		parsingResult.setAttribute(attribute);
 		parsingResult.setTypeOf(typeOf);
 		return parsingResult;
 	}

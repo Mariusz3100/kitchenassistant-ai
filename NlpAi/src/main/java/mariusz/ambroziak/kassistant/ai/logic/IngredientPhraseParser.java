@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.ModelAndView;
 
 import ch.qos.logback.core.pattern.SpacePadder;
+import mariusz.ambroziak.kassistant.ai.edamam.nlp.CalculatedResults;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.EdamanIngredientParsingService;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
@@ -44,7 +46,6 @@ public class IngredientPhraseParser {
 	@Autowired
 	private NamedEntityRecognitionClientService nerRecognizer;
 	private ResourceLoader resourceLoader;
-	private Resource inputFileResource;
 	
 	private EdamanIngredientParsingService edamanNlpParsingService;
 	@Autowired
@@ -68,10 +69,8 @@ public class IngredientPhraseParser {
 		this.tokenizator = tokenizator;
 		this.nerRecognizer = nerRecognizer;
 		this.resourceLoader = resourceLoader;
-		this.inputFileResource = this.resourceLoader.getResource("classpath:/teachingResources/wordsInput");
 		this.edamanNlpParsingService = edamanNlpParsingService;
 		this.wordClasifier = wordClasifier;
-		this.spacelessRegex = spacelessRegex;
 	}
 
 
@@ -82,7 +81,7 @@ public class IngredientPhraseParser {
 
 		List<LearningTuple> inputLines= edamanNlpParsingService.retrieveDataFromFile();
 		for(LearningTuple er:inputLines) {
-			String line=er.getOriginalPhrase();
+			String line=correctErrors(er.getOriginalPhrase());
 
 			ParsingProcessObject parsingAPhrase=new ParsingProcessObject(er);
 			
@@ -125,7 +124,34 @@ public class IngredientPhraseParser {
 		object.setCorrectedPhrase(parsingAPhrase.createCorrectedPhrase());
 		object.setCorrectedTokens(parsingAPhrase.getCorrectedtokens());
 		object.setExpectedResult(parsingAPhrase.getLearningTuple());
+		object.setCalculatedResult(calculateWordsFound(parsingAPhrase));
 		return object;
+	}
+
+
+
+
+	private CalculatedResults calculateWordsFound(ParsingProcessObject parsingAPhrase) {
+		String expected=parsingAPhrase.getLearningTuple().getFoodMatch();
+		
+		List<String> found=new ArrayList<String>();
+		List<String> mistakenlyFound=new ArrayList<String>();
+
+		for(QualifiedToken qt:parsingAPhrase.getFinalResults()) {
+			if(qt.getWordType()==WordType.ProductElement) {
+				if(expected.contains(qt.getText())) {
+					found.add(qt.getText());
+					expected=expected.replaceAll(qt.getText(), "").replaceAll("  ", " ");
+				}else {
+					mistakenlyFound.add(qt.getText());
+				}
+			}
+		}
+		
+		List<String> notFound=Arrays.asList(expected.split(" "));
+
+		return new CalculatedResults(notFound,found,mistakenlyFound);
+		
 	}
 
 

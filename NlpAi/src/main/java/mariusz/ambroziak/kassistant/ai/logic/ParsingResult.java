@@ -2,6 +2,7 @@ package mariusz.ambroziak.kassistant.ai.logic;
 
 import java.util.List;
 
+import mariusz.ambroziak.kassistant.ai.edamam.nlp.CalculatedResults;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
@@ -9,6 +10,7 @@ import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 class ParsingResult{
 	private String originalPhrase;
 	private LearningTuple expectedResult;
+	private CalculatedResults calculatedResult;
 	private String entities;
 	private String entityLess;
 	private String tokenString;
@@ -16,6 +18,16 @@ class ParsingResult{
 	
 	private String correctedPhrase;
 	private List<Token> correctedTokens;
+
+
+	
+	public CalculatedResults getCalculatedResult() {
+		return calculatedResult;
+	}
+
+	public void setCalculatedResult(CalculatedResults calculatedResult) {
+		this.calculatedResult = calculatedResult;
+	}
 
 	public String getCorrectedPhrase() {
 		return correctedPhrase;

@@ -46,6 +46,7 @@ public class WordClasifier {
 	public static ArrayList<String> productTypeKeywords;
 	public static ArrayList<String> irrelevanceKeywords;
 	public static ArrayList<String> quantityTypeKeywords;
+	public static ArrayList<String> quantityAttributeKeywords;
 	public static ArrayList<String> punctationTypeKeywords;
 
 
@@ -80,6 +81,8 @@ public class WordClasifier {
 		//presumably too specific ones:
 		productTypeKeywords.add("dressing");
 
+		quantityAttributeKeywords=new ArrayList<String>();
+		quantityAttributeKeywords.add("size");
 		
 	}
 
@@ -154,7 +157,12 @@ public class WordClasifier {
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
 		Token t=tokens.getTokens().get(index);
 		String token=t.getText();
-		
+		WordType improperlyFoundType=improperlyFindType(parsingAPhrase,index,futureTokens);
+		if(improperlyFoundType!=null) {
+			addResult(parsingAPhrase,index,new QualifiedToken(t,improperlyFoundType));
+			
+			return;
+		}
 		if(Pattern.matches(punctuationRegex, token)) {
 			addResult(parsingAPhrase,index,new QualifiedToken(t,WordType.PunctuationElement));
 			
@@ -176,6 +184,19 @@ public class WordClasifier {
 			}
 		}
 
+	}
+
+	private WordType improperlyFindType(ParsingProcessObject parsingAPhrase, int index,
+			Map<Integer, WordType> futureTokens) {
+		//TODO this should be deleted in the end
+		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
+		Token t=tokens.getTokens().get(index);
+		
+		if(t.getText().equals("medium"))
+			return WordType.QuantityElement;
+		
+		
+		return null;
 	}
 
 	private ArrayList<WordsApiResult> searchForAllPossibleMeaningsInWordsApi(ParsingProcessObject parsingAPhrase,
@@ -306,7 +327,7 @@ public class WordClasifier {
 
 	private static WordsApiResult checkProductTypesForWordObject(ArrayList<WordsApiResult> wordResults) {
 		for(WordsApiResult war:wordResults) {
-			if(checkIfTypesContainKeywords(war.getOriginalWord(),war.getTypeOf(),productTypeKeywords)) {
+			if(checkIfPropertiesFromWordsApiContainKeywords(war.getOriginalWord(),war.getTypeOf(),productTypeKeywords)) {
 				return war;
 			}
 		}
@@ -316,7 +337,9 @@ public class WordClasifier {
 
 	private static WordsApiResult checkQuantityTypesForWordObject(ArrayList<WordsApiResult> wordResults) {
 		for(WordsApiResult war:wordResults) {
-			if(war instanceof WordsApiResultImpostor||checkIfTypesContainKeywords(war.getOriginalWord(),war.getTypeOf(),quantityTypeKeywords)) {
+			if(war instanceof WordsApiResultImpostor
+					||checkIfPropertiesFromWordsApiContainKeywords(war.getOriginalWord(),war.getTypeOf(),quantityTypeKeywords)
+					||checkIfPropertiesFromWordsApiContainKeywords(war.getOriginalWord(),war.getAttribute(),quantityAttributeKeywords)) {
 				return war;
 			}
 		}
@@ -326,7 +349,7 @@ public class WordClasifier {
 
 
 
-	private static boolean checkIfTypesContainKeywords(String productName, ArrayList<String> typeResults,ArrayList<String> keywords) {
+	private static boolean checkIfPropertiesFromWordsApiContainKeywords(String productName, ArrayList<String> typeResults,ArrayList<String> keywords) {
 		for(String typeToBeChecked:typeResults) {
 			for(String typeConsidered:keywords) {
 				if(typeToBeChecked.indexOf(typeConsidered)>=0) {
