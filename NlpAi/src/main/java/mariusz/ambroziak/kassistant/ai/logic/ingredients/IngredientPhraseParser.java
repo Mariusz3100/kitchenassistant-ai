@@ -1,4 +1,4 @@
-package mariusz.ambroziak.kassistant.ai.logic;
+package mariusz.ambroziak.kassistant.ai.logic.ingredients;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,6 +27,10 @@ import mariusz.ambroziak.kassistant.ai.edamam.nlp.CalculatedResults;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.EdamanIngredientParsingService;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
+import mariusz.ambroziak.kassistant.ai.logic.ParsingResult;
+import mariusz.ambroziak.kassistant.ai.logic.ParsingResultList;
+import mariusz.ambroziak.kassistant.ai.logic.QualifiedToken;
+import mariusz.ambroziak.kassistant.ai.logic.WordClasifier;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntityRecognitionClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NerResults;

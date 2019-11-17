@@ -7,7 +7,7 @@ import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 //class mainly for presenting in angular
-class ParsingResult{
+public class ParsingResult{
 	private String originalPhrase;
 	private LearningTuple expectedResult;
 	private CalculatedResults calculatedResult;
