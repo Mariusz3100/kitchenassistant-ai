@@ -1,5 +1,6 @@
 package mariusz.ambroziak.kassistant.ai.nlpclients.tokenization;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -43,4 +44,10 @@ public class TokenizationResults {
 		this.tokens = tokens;
 	}
 
+	public static TokenizationResults createEmpty() {
+		TokenizationResults tr=new TokenizationResults();
+		tr.setPhrase("");
+		tr.setTokens(new ArrayList<Token>());
+		return tr;
+	}
 }

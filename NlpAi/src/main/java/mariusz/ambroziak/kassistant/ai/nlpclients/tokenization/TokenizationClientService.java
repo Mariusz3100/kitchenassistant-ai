@@ -21,6 +21,9 @@ public class TokenizationClientService {
 	}
 
 	public TokenizationResults parse(String name) {
+		if(name==null||name.isEmpty()) {
+			 return TokenizationResults.createEmpty();
+		}
 		TokenizationResults retValue=this.restTemplate.getForObject("http://127.0.0.1:8000/tokenizer?param={param}", TokenizationResults.class,name);
 		
 		return retValue;

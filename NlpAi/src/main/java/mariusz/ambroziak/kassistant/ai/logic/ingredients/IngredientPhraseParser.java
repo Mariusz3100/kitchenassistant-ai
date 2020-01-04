@@ -175,15 +175,6 @@ public class IngredientPhraseParser {
 
 
 
-	private ParsingResult createResultObject(String line, String entitiesString, String entitylessString,
-			List<QualifiedToken> results) {
-		ParsingResult object=new ParsingResult();
-		object.setOriginalPhrase(line);
-		object.setTokens(results);
-		object.setEntities(entitiesString);
-		object.setEntityLess(entitylessString);
-		return object;
-	}
 
 
 	private String correctErrors(String phrase) {
