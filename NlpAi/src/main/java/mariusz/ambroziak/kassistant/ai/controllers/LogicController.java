@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
-import mariusz.ambroziak.kassistant.ai.logic.IngredientPhraseParser;
 import mariusz.ambroziak.kassistant.ai.logic.ParsingResultList;
+import mariusz.ambroziak.kassistant.ai.logic.ingredients.IngredientPhraseParser;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NerResults;
 
 @RestController
