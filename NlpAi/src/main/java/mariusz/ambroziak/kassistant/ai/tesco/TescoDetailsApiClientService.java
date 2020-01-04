@@ -34,9 +34,8 @@ import mariusz.ambroziak.kassistant.ai.utils.ProblemLogger;
 
 
 @Component
-public class TescoApiClientService {
+public class TescoDetailsApiClientService {
 	private static final String DETAILS_BASE_URL = "https://dev.tescolabs.com/product/?tpnb=";
-	private static final String baseUrl= "https://dev.tescolabs.com/grocery/products/";
 	private static final int  productsReturnedLimit=100;
 
 	private static final String headerName="Ocp-Apim-Subscription-Key";
@@ -52,26 +51,21 @@ public class TescoApiClientService {
 	
 	
 	
-	public TescoApiClientService(ResourceLoader resourceLoader) {
+	public TescoDetailsApiClientService(ResourceLoader resourceLoader) {
 		super();
 		this.resourceLoader = resourceLoader;
 		this.inputFileResource = this.resourceLoader.getResource("classpath:/teachingResources/tomatoProducts");;
 	}
 
 
-	private String getResponse(String phrase) {
+	private String getResponse(String url) {
 		ClientConfig cc = new DefaultClientConfig();
 		cc.getProperties().put(ClientConfig.PROPERTY_FOLLOW_REDIRECTS, true);
 
 		Client c = Client.create();
-		WebResource client = c.resource(baseUrl);
+		WebResource client = c.resource(url);
 
-		MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-		queryParams.add("query", phrase);
-		queryParams.add("offset", "0");
-		queryParams.add("limit",Integer.toString(productsReturnedLimit));
-		WebResource clientWithParams = client.queryParams(queryParams);
-		Builder clientWithParamsAndHeader = clientWithParams.header(headerName, headerValue);
+		Builder clientWithParamsAndHeader = client.header(headerName, headerValue);
 
 		String response1 ="";
 
@@ -80,8 +74,8 @@ public class TescoApiClientService {
 			return response1;
 
 		}catch( com.sun.jersey.api.client.UniformInterfaceException e){
-			ProblemLogger.logProblem("UniformInterfaceException for term: "+phrase+". Waiting and retrying");
-			sleep(2000);
+			ProblemLogger.logProblem("UniformInterfaceException for url: "+url+". Waiting and retrying");
+			sleep(3000);
 			try{
 				response1 = clientWithParamsAndHeader.accept("application/json").get(String.class);
 				return response1;
@@ -99,21 +93,28 @@ public class TescoApiClientService {
 	}
 
 
-	public ArrayList<Tesco_Product> getProduktsFor(String phrase){
+	public Tesco_Product getProduktByUrl(String url){
+		String response=this.getResponse(url);
 
-		if(phrase==null|phrase.equals(""))
-			return new ArrayList<Tesco_Product>();
+		if(response==null||response.equals(""))
+			return null;
 
-		String response = getResponse(phrase);
+		JSONObject root=new JSONObject(response);
 
-		ArrayList<Tesco_Product> list = parseResponse(response);
+		JSONArray products=root.getJSONArray("products");
 
+		if(products.length()>0) {
+			JSONObject actualProduct = products.getJSONObject(0);
+			Tesco_Product createParticularProduct = createParticularProduct(actualProduct);
 
-		return list;
+			return createParticularProduct;
+
+		}
+		return null;
 	}
 
 
-	private static float getPrice(JSONObject ApiProdukt, String url) {
+	private float getPrice(JSONObject ApiProdukt, String url) {
 		String minPrice=(String) ApiProdukt.get("minimumPrice");
 		String maxPrice=(String) ApiProdukt.get("maximumPrice");
 
@@ -129,7 +130,7 @@ public class TescoApiClientService {
 	}
 
 
-	private static float extractFloatPrice(String stringPrice) {
+	private float extractFloatPrice(String stringPrice) {
 		stringPrice=stringPrice.replace("$", "");
 		float floatPrice=Float.parseFloat(stringPrice);
 		return floatPrice;
@@ -138,7 +139,7 @@ public class TescoApiClientService {
 
 	
 
-	private static ArrayList<Tesco_Product> parseResponse(String response) {
+	private ArrayList<Tesco_Product> parseResponse(String response) {
 		JSONObject jsonRoot=new JSONObject(response);
 
 
@@ -155,7 +156,7 @@ public class TescoApiClientService {
 	}
 
 
-	private static ArrayList<Tesco_Product> calculateProductList(JSONArray jsonProductResultsArray) {
+	private ArrayList<Tesco_Product> calculateProductList(JSONArray jsonProductResultsArray) {
 		ArrayList<Tesco_Product> resultList=new ArrayList<Tesco_Product>();
 
 
@@ -170,8 +171,8 @@ public class TescoApiClientService {
 	}
 
 
-	private static Tesco_Product createParticularProduct(JSONObject singleProductJson) {
-		String name =singleProductJson.has("name")?singleProductJson.getString("name"):"";
+	private Tesco_Product createParticularProduct(JSONObject singleProductJson) {
+		//String name =singleProductJson.has("name")?singleProductJson.getString("name"):"";
 		String detailsUrl="";
 		if(singleProductJson.has("tpnb")) {
 			long tpnb =singleProductJson.getLong("tpnb");
@@ -181,52 +182,46 @@ public class TescoApiClientService {
 //		String metadata=createMetadata(singleProductJson);
 		String description = calculateDescription(singleProductJson);
 		float price = singleProductJson.has("price")?(float)singleProductJson.getDouble("price"):0;
-
+		String actualDesc=singleProductJson.has("marketingText")?singleProductJson.getString("marketingText"):"";
 		String quantityString = calculateQuantityJspString(singleProductJson, detailsUrl);
 		String department =singleProductJson.has("department")?singleProductJson.getString("department"):"";
 		String superDepartment =singleProductJson.has("superDepartment")?singleProductJson.getString("superDepartment"):"";
 
-		Tesco_Product result=new Tesco_Product(name,detailsUrl,description,quantityString,department,superDepartment);
+		Tesco_Product result=new Tesco_Product(description,detailsUrl,actualDesc,quantityString,department,superDepartment);
 		return result;
 	}
 
 
-	private static String createMetadata(JSONObject singleProductJson) {
-		JSONObject metadata=new JSONObject();
-		String category1 = singleProductJson.has("superDepartment")?singleProductJson.getString("superDepartment"):"";
-		String category2 = singleProductJson.has("department")?singleProductJson.getString("department"):"";
-
-		metadata.put(MetadataConstants.categoryNameJsonName,category1 +MetadataConstants.stringListSeparator+category2);
-	//	metadata.addProperty(MetadataConstants.categoryNameJsonPrefix,category2 );
-
-		
-		return metadata.toString();
-	}
 
 
-	private static String calculateDescription(JSONObject singleProductJson) {
+
+	private String calculateDescription(JSONObject singleProductJson) {
 		if(singleProductJson.has("description")) {
 		
-		JSONArray jsonArray = singleProductJson.getJSONArray("description");
-		String retValue="";
-		for(int i=0;i<jsonArray.length();i++) {
-			String line = jsonArray.getString(i);
-			retValue+=line+"\n";
-		}
+//		JSONArray jsonArray = singleProductJson.getString("description");
+//		String retValue="";
+//		for(int i=0;i<jsonArray.length();i++) {
+//			String line = jsonArray.getString(i);
+//			retValue+=line+"\n";
+//		}
 
-		return retValue;
+//		return retValue;
+			return singleProductJson.getString("description");
 		}else {
 			return "";
 		}
 	}
 
-
-	private static String calculateQuantityJspString(JSONObject singleProductJson, String detailsUrl) {
-		String contentsMeasureType = singleProductJson.getString("ContentsMeasureType");
-		int contentsQuantity = singleProductJson.getInt("ContentsQuantity");
-	
-
-		return contentsQuantity+" "+contentsMeasureType;
+//qtyContents={"quantity":360,"totalQuantity":360,"quantityUom":"g","unitQty":"KG","netContents":"360g"}
+	private String calculateQuantityJspString(JSONObject singleProductJson, String detailsUrl) {
+		if(singleProductJson.has("qtyContents")) {
+		JSONObject qty=singleProductJson.getJSONObject("qtyContents");
+		float f=qty.getFloat("quantity");
+		String qt=qty.getString("quantityUom");
+		
+		return f+" "+qt;
+		}
+		return "";
 	}
 
 	public Tesco_Product getProduktByShopId(String id){
@@ -240,6 +235,27 @@ public class TescoApiClientService {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+
+	public List<Tesco_Product> getProduktsFromFile() throws IOException {
+		InputStream inputStream = inputFileResource.getInputStream();
+		BufferedReader br=new BufferedReader(new InputStreamReader(inputStream));
+		List<Tesco_Product> retValue=new ArrayList<Tesco_Product>();
+
+		String line=br.readLine();
+		Map<String,String> differences=new HashMap<String,String>();
+
+		while(line!=null) {
+			String[] elements=line.split(";");
+			Tesco_Product poduct=this.getProduktByUrl(elements[1]);
+			retValue.add(poduct);
+			System.out.println("Parsed: "+poduct.getName());
+			line=br.readLine();
+		}
+		return retValue;
+		
+		
 	}
 
 

@@ -51,6 +51,15 @@ public class TescoController {
     	return retValue;
     	
     }
+	@CrossOrigin
+	@ResponseBody
+	@RequestMapping("/tescoParseFromFile")
+    public ParsingResultList tescoParseFromFile() throws IOException{
+    	ParsingResultList retValue=this.productParserService.parseFromFile();
+    	return retValue;
+    	
+	}
+	@CrossOrigin
 	@ResponseBody
 	@RequestMapping("/tescoGetResults")
     public String tescoGetResults(@RequestParam(value="param", defaultValue="empty") String param) throws IOException{
