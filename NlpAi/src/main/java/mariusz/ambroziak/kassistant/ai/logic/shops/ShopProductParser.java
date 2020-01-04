@@ -29,6 +29,7 @@ import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.logic.ParsingResult;
 import mariusz.ambroziak.kassistant.ai.logic.ParsingResultList;
+import mariusz.ambroziak.kassistant.ai.logic.ProductsWordsClasifier;
 import mariusz.ambroziak.kassistant.ai.logic.QualifiedToken;
 import mariusz.ambroziak.kassistant.ai.logic.WordClasifier;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
@@ -38,6 +39,7 @@ import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
 import mariusz.ambroziak.kassistant.ai.tesco.TescoApiClientService;
+import mariusz.ambroziak.kassistant.ai.tesco.TescoDetailsApiClientService;
 import mariusz.ambroziak.kassistant.ai.tesco.Tesco_Product;
 import mariusz.ambroziak.kassistant.ai.utils.ParsingProcessObject;
 import mariusz.ambroziak.kassistant.ai.wordsapi.WordNotFoundException;
@@ -55,10 +57,13 @@ public class ShopProductParser {
 	@Autowired
 	private TescoApiClientService tescoService;
 	@Autowired
+	private TescoDetailsApiClientService tescoDetailsService;
+	@Autowired
 	private EdamanIngredientParsingService edamanNlpParsingService;
 	@Autowired
 	private WordClasifier wordClasifier;
-
+	@Autowired
+	private ProductsWordsClasifier shopWordClacifier;
 	
 	
 	
@@ -77,14 +82,10 @@ public class ShopProductParser {
 	public ParsingResultList categorizeProducts(String phrase) throws IOException {
 		ParsingResultList retValue=new ParsingResultList();
 
-		List<Tesco_Product> inputs= tescoService.getProduktsFor(phrase);
+		List<Tesco_Product> inputs= this.tescoService.getProduktsFor(phrase);
 		for(Tesco_Product product:inputs) {
 			ProductParsingProcessObject parsingAPhrase=new ProductParsingProcessObject(product);
-
-			String name=product.getName();
-
-			
-			NerResults entitiesFound = this.nerRecognizer.find(name);
+			NerResults entitiesFound = this.nerRecognizer.find(product.getName());
 			parsingAPhrase.setEntities(entitiesFound);
 
 			String entitylessString=parsingAPhrase.getEntitylessString();
@@ -93,7 +94,7 @@ public class ShopProductParser {
 			parsingAPhrase.setEntitylessTokenized(tokens);
 			parsingAPhrase.setFinalResults(new ArrayList<QualifiedToken>());
 
-//			this.wordClasifier.calculateWordsType(parsingAPhrase);
+			this.shopWordClacifier.calculateWordsType(parsingAPhrase);
 
 
 			ParsingResult singleResult = createResultObject(parsingAPhrase);
@@ -113,31 +114,11 @@ public class ShopProductParser {
 	private ParsingResult createResultObject(ProductParsingProcessObject parsingAPhrase) {
 		ParsingResult object=new ParsingResult();
 		object.setOriginalPhrase(parsingAPhrase.getProduct().getName());
-		String fused=parsingAPhrase.getEntities().getEntities().stream().map(s->s.getText()).collect( Collectors.joining(" ") );
+		String fused=parsingAPhrase.getEntities().getEntities().stream().map(s->s.getText()).collect( Collectors.joining("<br>") );
 
 		object.setEntities(fused);
 		object.setEntityLess(parsingAPhrase.getEntitylessString());
-
-		
-		return object;
-	}
-
-
-
-
-	private ParsingResult createResultObject(ParsingProcessObject parsingAPhrase) {
-		ParsingResult object=new ParsingResult();
-		object.setOriginalPhrase(parsingAPhrase.getLearningTuple().getOriginalPhrase());
 		object.setTokens(parsingAPhrase.getFinalResults());
-		
-		String fused=parsingAPhrase.getCardinalEntities().stream().map(s->s.getText()).collect( Collectors.joining(" ") );
-
-		
-		object.setEntities(fused);
-		object.setEntityLess(parsingAPhrase.getEntitylessString());
-		object.setCorrectedPhrase(parsingAPhrase.createCorrectedPhrase());
-		object.setCorrectedTokens(parsingAPhrase.getCorrectedtokens());
-		object.setExpectedResult(parsingAPhrase.getLearningTuple());
 		object.setCalculatedResult(calculateWordsFound(parsingAPhrase));
 		return object;
 	}
@@ -145,22 +126,16 @@ public class ShopProductParser {
 
 
 
-	private CalculatedResults calculateWordsFound(ParsingProcessObject parsingAPhrase) {
-		String expected=parsingAPhrase.getLearningTuple().getFoodMatch();
+
+
+
+
+	private CalculatedResults calculateWordsFound(ProductParsingProcessObject parsingAPhrase) {
+		String expected="";
 		
 		List<String> found=new ArrayList<String>();
 		List<String> mistakenlyFound=new ArrayList<String>();
-
-		for(QualifiedToken qt:parsingAPhrase.getFinalResults()) {
-			if(qt.getWordType()==WordType.ProductElement) {
-				if(expected.contains(qt.getText())) {
-					found.add(qt.getText());
-					expected=expected.replaceAll(qt.getText(), "").replaceAll("  ", " ");
-				}else {
-					mistakenlyFound.add(qt.getText());
-				}
-			}
-		}
+		found=parsingAPhrase.getFinalResults().stream().filter(t->t.getWordType()==WordType.ProductElement).map(t->t.getText()).collect(Collectors.toList());
 		
 		List<String> notFound=Arrays.asList(expected.split(" "));
 
@@ -199,6 +174,41 @@ public class ShopProductParser {
 			System.out.println(tp.getName()+";"+tp.getDetailsUrl());
 		}
 		
+	}
+
+
+
+
+	public ParsingResultList parseFromFile() throws IOException {
+		ParsingResultList retValue=new ParsingResultList();
+
+		List<Tesco_Product> inputs= tescoDetailsService.getProduktsFromFile();
+		for(Tesco_Product product:inputs) {
+			ProductParsingProcessObject parsingAPhrase=new ProductParsingProcessObject(product);
+
+			String name=product.getName();
+
+			
+			NerResults entitiesFound = this.nerRecognizer.find(name);
+			parsingAPhrase.setEntities(entitiesFound);
+
+			String entitylessString=parsingAPhrase.getEntitylessString();
+
+			TokenizationResults tokens = this.tokenizator.parse(entitylessString);
+			parsingAPhrase.setEntitylessTokenized(tokens);
+			parsingAPhrase.setFinalResults(new ArrayList<QualifiedToken>());
+
+			this.wordClasifier.calculateWordsType(parsingAPhrase);
+
+
+			ParsingResult singleResult = createResultObject(parsingAPhrase);
+			
+			retValue.addResult(singleResult);
+
+			
+		}
+
+		return retValue;
 	}
 
 

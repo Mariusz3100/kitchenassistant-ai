@@ -16,7 +16,7 @@ import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
-import mariusz.ambroziak.kassistant.ai.utils.ParsingProcessObject;
+import mariusz.ambroziak.kassistant.ai.utils.AbstractParsingObject;
 import mariusz.ambroziak.kassistant.ai.utils.QuantityTranslation;
 import mariusz.ambroziak.kassistant.ai.wikipedia.WikipediaApiClient;
 import mariusz.ambroziak.kassistant.ai.wordsapi.ConvertApiClient;
@@ -87,13 +87,13 @@ public class WordClasifier {
 	}
 
 
-	public void calculateWordsType(ParsingProcessObject parsingAPhrase) {
+	public void calculateWordsType(AbstractParsingObject parsingAPhrase) {
 		initialCategorization(parsingAPhrase);
 		
 		recategorize(parsingAPhrase);
 	}
 
-	private void recategorize(ParsingProcessObject parsingAPhrase) {
+	private void recategorize(AbstractParsingObject parsingAPhrase) {
 		fillQuanAndProdPhrases(parsingAPhrase);
 		
 		TokenizationResults parsed = this.tokenizator.parse(parsingAPhrase.createCorrectedPhrase());
@@ -102,7 +102,7 @@ public class WordClasifier {
 		
 	}
 
-	private void fillQuanAndProdPhrases(ParsingProcessObject parsingAPhrase) {
+	private void fillQuanAndProdPhrases(AbstractParsingObject parsingAPhrase) {
 		String quantityPhrase="",productPhrase="";
 		for(int i=0;i<parsingAPhrase.getFinalResults().size();i++) {
 			QualifiedToken qt=parsingAPhrase.getFinalResults().get(i);
@@ -122,7 +122,7 @@ public class WordClasifier {
 		parsingAPhrase.setProductPhrase(productPhrase);
 	}
 
-	private void initialCategorization(ParsingProcessObject parsingAPhrase) {
+	private void initialCategorization(AbstractParsingObject parsingAPhrase) {
 		Map<Integer,WordType> futureTokens=new HashMap<Integer,WordType>();
 		for(int i=0;i<parsingAPhrase.getEntitylessTokenized().getTokens().size();i++) {
 			Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(i);
@@ -149,7 +149,7 @@ public class WordClasifier {
 		}
 	}
 	
-	public void classifyWord(ParsingProcessObject parsingAPhrase, int index, Map<Integer, WordType> futureTokens) throws WordNotFoundException {
+	public void classifyWord(AbstractParsingObject parsingAPhrase, int index, Map<Integer, WordType> futureTokens) throws WordNotFoundException {
 		if(futureTokens.containsKey(index)) {
 			 return;
 		 }
@@ -186,7 +186,7 @@ public class WordClasifier {
 
 	}
 
-	private WordType improperlyFindType(ParsingProcessObject parsingAPhrase, int index,
+	private WordType improperlyFindType(AbstractParsingObject parsingAPhrase, int index,
 			Map<Integer, WordType> futureTokens) {
 		//TODO this should be deleted in the end
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
@@ -199,7 +199,7 @@ public class WordClasifier {
 		return null;
 	}
 
-	private ArrayList<WordsApiResult> searchForAllPossibleMeaningsInWordsApi(ParsingProcessObject parsingAPhrase,
+	private ArrayList<WordsApiResult> searchForAllPossibleMeaningsInWordsApi(AbstractParsingObject parsingAPhrase,
 			int index, Token t) throws WordNotFoundException {
 		 String token=t.getText();
 		 String lemma=t.getLemma();
@@ -250,13 +250,13 @@ public class WordClasifier {
 		return wordResults;
 	}
 
-	private void addQuantityResult(ParsingProcessObject parsingAPhrase, int index, Token t) {
+	protected void addQuantityResult(AbstractParsingObject parsingAPhrase, int index, Token t) {
 		QualifiedToken result=new QualifiedToken(t, WordType.QuantityElement);
 		
 		addResult(parsingAPhrase,index,result);
 	}
 
-	private void addResult(ParsingProcessObject parsingAPhrase, int index, QualifiedToken qt) {
+	private void addResult(AbstractParsingObject parsingAPhrase, int index, QualifiedToken qt) {
 	
 		if(index>=parsingAPhrase.getFinalResults().size())
 			parsingAPhrase.getFinalResults().add(qt);
@@ -264,7 +264,7 @@ public class WordClasifier {
 			parsingAPhrase.getFinalResults().set(index,qt);
 	}
 
-	private void checkOtherTokens(ParsingProcessObject parsingAPhrase, int index,WordsApiResult productTypeRecognized,
+	private void checkOtherTokens(AbstractParsingObject parsingAPhrase, int index,WordsApiResult productTypeRecognized,
 			Map<Integer, WordType> futureTokens) {
 		if(futureTokens.containsKey(index)) {
 			return;
