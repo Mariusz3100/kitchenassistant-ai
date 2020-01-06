@@ -19,8 +19,29 @@ public class ParsingResult{
 	private String correctedPhrase;
 	private List<Token> correctedTokens;
 
+	private List<List<Token>> originalConnotations;
+	public List<List<Token>> getOriginalConnotations() {
+		return originalConnotations;
+	}
 
+	public void setOriginalConnotations(List<List<Token>> originalConnotations) {
+		this.originalConnotations = originalConnotations;
+	}
+
+	public List<List<Token>> getCorrectedConnotations() {
+		return correctedConnotations;
+	}
+
+	public void setCorrectedConnotations(List<List<Token>> correctedConnotations) {
+		this.correctedConnotations = correctedConnotations;
+	}
+
+	private List<List<Token>> correctedConnotations;
 	
+
+
+
+
 	public CalculatedResults getCalculatedResult() {
 		return calculatedResult;
 	}

@@ -50,18 +50,18 @@ public class IngredientPhraseParser {
 	@Autowired
 	private NamedEntityRecognitionClientService nerRecognizer;
 	private ResourceLoader resourceLoader;
-	
+
 	private EdamanIngredientParsingService edamanNlpParsingService;
 	@Autowired
 	private WordClasifier wordClasifier;
 
-	
-	
-	
-	
+
+
+
+
 	private String spacelessRegex="(\\d+)(\\w+)";
-	
-	
+
+
 
 
 
@@ -88,7 +88,7 @@ public class IngredientPhraseParser {
 			String line=correctErrors(er.getOriginalPhrase());
 
 			ParsingProcessObject parsingAPhrase=new ParsingProcessObject(er);
-			
+
 			NerResults entitiesFound = this.nerRecognizer.find(line);
 			parsingAPhrase.setEntities(entitiesFound);
 
@@ -102,10 +102,10 @@ public class IngredientPhraseParser {
 
 
 			ParsingResult singleResult = createResultObject(parsingAPhrase);
-			
+
 			retValue.addResult(singleResult);
 
-			
+
 		}
 
 		return retValue;
@@ -118,18 +118,103 @@ public class IngredientPhraseParser {
 	private ParsingResult createResultObject(ParsingProcessObject parsingAPhrase) {
 		ParsingResult object=new ParsingResult();
 		object.setOriginalPhrase(parsingAPhrase.getLearningTuple().getOriginalPhrase());
-		object.setTokens(parsingAPhrase.getFinalResults());
-		
+		List<QualifiedToken> primaryResults = parsingAPhrase.getFinalResults();
+		object.setTokens(primaryResults);
+
 		String fused=parsingAPhrase.getCardinalEntities().stream().map(s->s.getText()).collect( Collectors.joining(" ") );
 
-		
+
 		object.setEntities(fused);
 		object.setEntityLess(parsingAPhrase.getEntitylessString());
 		object.setCorrectedPhrase(parsingAPhrase.createCorrectedPhrase());
 		object.setCorrectedTokens(parsingAPhrase.getCorrectedtokens());
 		object.setExpectedResult(parsingAPhrase.getLearningTuple());
 		object.setCalculatedResult(calculateWordsFound(parsingAPhrase));
+
+
+		setConnotations(parsingAPhrase, object, primaryResults);
+
 		return object;
+	}
+
+
+
+
+	private void setConnotations(ParsingProcessObject parsingAPhrase, ParsingResult object,
+			List<QualifiedToken> primaryResults) {
+		List<Token> correctedTokens =parsingAPhrase.getCorrectedtokens();
+		List<List<Token>> originalConotations = extractPrimarilyFoundConnotations(primaryResults);
+
+		List<List<Token>> correctedConotations = findConnotationsInCorrected(correctedTokens);
+
+		object.setOriginalConnotations(originalConotations);
+		object.setCorrectedConnotations(correctedConotations);
+	}
+
+
+
+
+	private List<List<Token>> extractPrimarilyFoundConnotations(List<QualifiedToken> primaryResults) {
+		List<List<Token>> originalConotations=new ArrayList<List<Token>>();
+
+		for(int i=0;i<primaryResults.size();i++) {
+			List<Token> entryFromPrimary=new ArrayList<Token>();
+			QualifiedToken qt=primaryResults.get(i);
+			if(qt.getWordType()!=WordType.QuantityElement) {
+				entryFromPrimary.add(primaryResults.get(i));
+
+				QualifiedToken tokenFromFinal=(QualifiedToken) findHeadInTokens(primaryResults, primaryResults.get(i));
+				if(tokenFromFinal!=null&&tokenFromFinal.getWordType()!=WordType.QuantityElement)
+					entryFromPrimary.add(tokenFromFinal);
+
+				if(entryFromPrimary.size()>=2) {
+					originalConotations.add(entryFromPrimary);
+				}
+
+			}
+
+
+		}
+		return originalConotations;
+	}
+
+
+
+
+	private List<List<Token>> findConnotationsInCorrected(List<Token> correctedTokens) {
+		List<List<Token>> correctedConotations=new ArrayList<List<Token>>();
+		boolean ofPassed=false;
+
+		for(Token tokenFromCorrected:correctedTokens) {
+
+			if("of".equals(tokenFromCorrected.getText())) {
+				ofPassed=true;
+			}else if(ofPassed){
+
+				List<Token> correctedEntry=new ArrayList<Token>();
+				correctedEntry.add(tokenFromCorrected);
+				Token found=findHeadInTokens(correctedTokens, tokenFromCorrected);
+				if(found!=null)
+					correctedEntry.add(found);
+
+				if(correctedEntry.size()>=2) {
+					correctedConotations.add(correctedEntry);
+				}
+			}
+		}
+		return correctedConotations;
+	}
+
+
+
+
+	private Token findHeadInTokens(List<? extends Token> correctedTokens, Token getHeadFotThis) {
+		for(Token t:correctedTokens) {
+			if(t.getText().equals(getHeadFotThis.getHead())&&!t.getText().equals(getHeadFotThis.getText())) {
+				return t;
+			}
+		}
+		return null;
 	}
 
 
@@ -137,7 +222,7 @@ public class IngredientPhraseParser {
 
 	private CalculatedResults calculateWordsFound(ParsingProcessObject parsingAPhrase) {
 		String expected=parsingAPhrase.getLearningTuple().getFoodMatch();
-		
+
 		List<String> found=new ArrayList<String>();
 		List<String> mistakenlyFound=new ArrayList<String>();
 
@@ -151,11 +236,11 @@ public class IngredientPhraseParser {
 				}
 			}
 		}
-		
+
 		List<String> notFound=Arrays.asList(expected.split(" "));
 
 		return new CalculatedResults(notFound,found,mistakenlyFound);
-		
+
 	}
 
 
@@ -181,16 +266,16 @@ public class IngredientPhraseParser {
 
 		phrase=phrase.replaceFirst("½", "1/2");
 		phrase=phrase.replaceFirst("¼", "1/4");
-		
+
 		String replacedString=phrase.replaceAll(spacelessRegex, "$1 $2");
 		if(!phrase.equals(replacedString)) {
 			phrase=replacedString;
 		}
-		
+
 		if(phrase.substring(0, phrase.length()<10?phrase.length():10).indexOf(" c ")>0) {
 			phrase=phrase.replaceFirst(" c ", " cup ");
 		}
-		
+
 		if(phrase.substring(0, phrase.length()<10?phrase.length():10).indexOf(" & ")>0) {
 			phrase=phrase.replaceFirst(" & ", " and ");
 		}
@@ -198,7 +283,7 @@ public class IngredientPhraseParser {
 		return phrase;
 	}
 
-	
+
 
 	public TokenizationResults tokenizeSingleWord(String phrase) throws WordNotFoundException {
 		TokenizationResults parse = this.tokenizator.parse(phrase);
