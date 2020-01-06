@@ -37,7 +37,7 @@ public class LearningTuple extends EdamamNlpSingleIngredientInner{
 		PreciseQuantity resultingQuantity = EdamanApiQuantityExtractor.getResultingQuantity(quantity, measure);
 
 		this.originalPhrase = originalPhrase;
-		this.amount = quantity*resultingQuantity.getAmount();
+		this.amount = resultingQuantity.getAmount();
 		this.amountType = resultingQuantity.getType();
 		
 	}
