@@ -1,5 +1,6 @@
 package mariusz.ambroziak.kassistant.ai.nlpclients.tokenization;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DependencyTreeNode {
@@ -36,6 +37,19 @@ public class DependencyTreeNode {
 		
 		
 		
-		
+//		public List<String> getAllTwoWordDependencies(){
+//			if(children==null||children.isEmpty()) {
+//				return new ArrayList<String>();
+//			}else {
+//				List<String> retValue=new ArrayList<String>();
+//				
+//				for(DependencyTreeNode child:children) {
+//					retValue.add(ch)
+//				}
+//			}
+//			
+//			
+//			
+//		}
 		
 }

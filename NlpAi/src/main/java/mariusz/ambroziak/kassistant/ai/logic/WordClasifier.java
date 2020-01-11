@@ -63,6 +63,7 @@ public class WordClasifier {
 		productTypeKeywords.add("meat");
 		productTypeKeywords.add("food");
 		productTypeKeywords.add("sweetener");
+		productTypeKeywords.add("cheese");
 
 		
 
