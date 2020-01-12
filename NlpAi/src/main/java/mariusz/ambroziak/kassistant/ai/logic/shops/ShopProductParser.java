@@ -119,7 +119,7 @@ public class ShopProductParser {
 		object.setEntities(fused);
 		object.setEntityLess(parsingAPhrase.getEntitylessString());
 		object.setTokens(parsingAPhrase.getFinalResults());
-		object.setCalculatedResult(calculateWordsFound(parsingAPhrase));
+		object.setRestrictivelyCalculatedResult(calculateWordsFound(parsingAPhrase));
 		return object;
 	}
 

@@ -16,6 +16,16 @@ public abstract class AbstractParsingObject {
 	private NerResults nerResults;
 	private TokenizationResults entitylessTokenized;
 	private List<QualifiedToken> finalResults;
+	private List<QualifiedToken> permissiveFinalResults;
+
+	public List<QualifiedToken> getPermissiveFinalResults() {
+		return permissiveFinalResults;
+	}
+
+	public void setPermissiveFinalResults(List<QualifiedToken> permissiveFinalResults) {
+		this.permissiveFinalResults = permissiveFinalResults;
+	}
+
 	private String quantityPhrase;
 	private String productPhrase;
 	private List<Token> correctedtokens;

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.ModelAndView;
 
 import ch.qos.logback.core.pattern.SpacePadder;
+import mariusz.ambroziak.kassistant.ai.categorisation.NlpConstants;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.CalculatedResults;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.EdamanIngredientParsingService;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
@@ -86,7 +87,7 @@ public class IngredientPhraseParser {
 		List<LearningTuple> inputLines= edamanNlpParsingService.retrieveDataFromFile();
 		for(LearningTuple er:inputLines) {
 			String line=correctErrors(er.getOriginalPhrase());
-
+			er.setOriginalPhrase(line);
 			ParsingProcessObject parsingAPhrase=new ParsingProcessObject(er);
 
 			NerResults entitiesFound = this.nerRecognizer.find(line);
@@ -129,12 +130,35 @@ public class IngredientPhraseParser {
 		object.setCorrectedPhrase(parsingAPhrase.createCorrectedPhrase());
 		object.setCorrectedTokens(parsingAPhrase.getCorrectedtokens());
 		object.setExpectedResult(parsingAPhrase.getLearningTuple());
-		object.setCalculatedResult(calculateWordsFound(parsingAPhrase));
-
-
+		object.setRestrictivelyCalculatedResult(calculateWordsFound(parsingAPhrase.getLearningTuple().getFoodMatch(),parsingAPhrase.getFinalResults()));
+		object.setPermisivelyCalculatedResult(calculateWordsFound(parsingAPhrase.getLearningTuple().getFoodMatch(),parsingAPhrase.getPermissiveFinalResults()));
+		
 		setConnotations(parsingAPhrase, object, primaryResults);
 
 		return object;
+	}
+
+
+
+
+	private CalculatedResults calculateWordsFound(String expected,List<QualifiedToken> finalResults) {
+		List<String> found=new ArrayList<String>();
+		List<String> mistakenlyFound=new ArrayList<String>();
+
+		for(QualifiedToken qt:finalResults) {
+			if(qt.getWordType()==WordType.ProductElement) {
+				if(expected.contains(qt.getText())) {
+					found.add(qt.getText());
+					expected=expected.replaceAll(qt.getText(), "").replaceAll("  ", " ");
+				}else {
+					mistakenlyFound.add(qt.getText());
+				}
+			}
+		}
+
+		List<String> notFound=Arrays.asList(expected.split(" "));
+
+		return new CalculatedResults(notFound,found,mistakenlyFound);
 	}
 
 
@@ -211,8 +235,15 @@ public class IngredientPhraseParser {
 	private Token findHeadInTokens(List<? extends Token> correctedTokens, Token getHeadFotThis) {
 		for(Token t:correctedTokens) {
 			if(t.getText().equals(getHeadFotThis.getHead())&&!t.getText().equals(getHeadFotThis.getText())) {
+				if(NlpConstants.connectiveTag.equals(t.getTag())
+						&&NlpConstants.connectivePos.equals(t.getPos())){
+					return findHeadInTokens(correctedTokens,t);
+				}
+				
 				return t;
 			}
+			
+			
 		}
 		return null;
 	}

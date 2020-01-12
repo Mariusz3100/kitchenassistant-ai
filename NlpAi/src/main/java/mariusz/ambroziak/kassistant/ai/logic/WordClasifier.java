@@ -31,7 +31,7 @@ public class WordClasifier {
 	private static String convertApiCheckRegex=".*[a-zA-Z].*";
 	private static String punctuationRegex="[\\.,\\-]*";
 
-	
+
 	@Autowired
 	private WordsApiClient wordsApiClient;
 
@@ -65,7 +65,7 @@ public class WordClasifier {
 		productTypeKeywords.add("sweetener");
 		productTypeKeywords.add("cheese");
 
-		
+
 
 		irrelevanceKeywords=new ArrayList<String>();
 		irrelevanceKeywords.add("activity");
@@ -90,17 +90,28 @@ public class WordClasifier {
 
 	public void calculateWordsType(AbstractParsingObject parsingAPhrase) {
 		initialCategorization(parsingAPhrase);
-		
+
 		recategorize(parsingAPhrase);
+
+		categorizeAllElseAsProducts(parsingAPhrase);
+	}
+
+	private void categorizeAllElseAsProducts(AbstractParsingObject parsingAPhrase) {
+		List<QualifiedToken> permissiveList=new ArrayList<QualifiedToken>();
+		for(QualifiedToken qt:parsingAPhrase.getFinalResults()) {
+			WordType type=qt.getWordType()==null?WordType.ProductElement:qt.getWordType();
+			permissiveList.add(new QualifiedToken(qt.getText(), qt.getLemma(), qt.getTag(), type));
+		}
+		parsingAPhrase.setPermissiveFinalResults(permissiveList);
 	}
 
 	private void recategorize(AbstractParsingObject parsingAPhrase) {
 		fillQuanAndProdPhrases(parsingAPhrase);
-		
+
 		TokenizationResults parsed = this.tokenizator.parse(parsingAPhrase.createCorrectedPhrase());
-		
+
 		parsingAPhrase.setCorrectedtokens(parsed.getTokens());
-		
+
 	}
 
 	private void fillQuanAndProdPhrases(AbstractParsingObject parsingAPhrase) {
@@ -114,11 +125,11 @@ public class WordClasifier {
 			}else {
 				productPhrase+=qt.getText()+" ";
 			}
-			
+
 		}
 		productPhrase=productPhrase.trim();
 		quantityPhrase=quantityPhrase.trim();
-		
+
 		parsingAPhrase.setQuantityPhrase(quantityPhrase);
 		parsingAPhrase.setProductPhrase(productPhrase);
 	}
@@ -149,27 +160,27 @@ public class WordClasifier {
 			}
 		}
 	}
-	
+
 	public void classifyWord(AbstractParsingObject parsingAPhrase, int index, Map<Integer, WordType> futureTokens) throws WordNotFoundException {
 		if(futureTokens.containsKey(index)) {
-			 return;
-		 }
-		
+			return;
+		}
+
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
 		Token t=tokens.getTokens().get(index);
 		String token=t.getText();
 		WordType improperlyFoundType=improperlyFindType(parsingAPhrase,index,futureTokens);
 		if(improperlyFoundType!=null) {
 			addResult(parsingAPhrase,index,new QualifiedToken(t,improperlyFoundType));
-			
+
 			return;
 		}
 		if(Pattern.matches(punctuationRegex, token)) {
 			addResult(parsingAPhrase,index,new QualifiedToken(t,WordType.PunctuationElement));
-			
+
 			return;
 		}
-		
+
 		ArrayList<WordsApiResult> wordResults = searchForAllPossibleMeaningsInWordsApi(parsingAPhrase, index, t);
 		if(wordResults!=null&&!wordResults.isEmpty()) {
 			WordsApiResult quantityTypeRecognized = checkQuantityTypesForWordObject(wordResults);
@@ -192,19 +203,19 @@ public class WordClasifier {
 		//TODO this should be deleted in the end
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
 		Token t=tokens.getTokens().get(index);
-		
+
 		if(t.getText().equals("medium"))
 			return WordType.QuantityElement;
-		
-		
+
+
 		return null;
 	}
 
 	private ArrayList<WordsApiResult> searchForAllPossibleMeaningsInWordsApi(AbstractParsingObject parsingAPhrase,
 			int index, Token t) throws WordNotFoundException {
-		 String token=t.getText();
-		 String lemma=t.getLemma();
-		
+		String token=t.getText();
+		String lemma=t.getLemma();
+
 		ArrayList<WordsApiResult> wordResults = wordsApiClient.searchFor(token);
 		if(wordResults==null||wordResults.isEmpty()) {
 
@@ -253,12 +264,12 @@ public class WordClasifier {
 
 	protected void addQuantityResult(AbstractParsingObject parsingAPhrase, int index, Token t) {
 		QualifiedToken result=new QualifiedToken(t, WordType.QuantityElement);
-		
+
 		addResult(parsingAPhrase,index,result);
 	}
 
 	private void addResult(AbstractParsingObject parsingAPhrase, int index, QualifiedToken qt) {
-	
+
 		if(index>=parsingAPhrase.getFinalResults().size())
 			parsingAPhrase.getFinalResults().add(qt);
 		else
@@ -306,7 +317,7 @@ public class WordClasifier {
 						String fused=subList.stream().map(s->s.getText()).collect( Collectors.joining(" ") );
 						if(fused.indexOf(expandedWordFromApi)>=0) {
 							QualifiedToken result=QualifiedToken.createMerged(fused,WordType.ProductElement);
-							
+
 							for(int i=index;i<expandedWordFromApiLength+index;i++) {
 								futureTokens.put(i, WordType.ProductElement);
 							}

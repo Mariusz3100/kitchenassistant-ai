@@ -10,7 +10,9 @@ import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 public class ParsingResult{
 	private String originalPhrase;
 	private LearningTuple expectedResult;
-	private CalculatedResults calculatedResult;
+	private CalculatedResults restrictivelyCalculatedResult;
+	private CalculatedResults permisivelyCalculatedResult;
+
 	private String entities;
 	private String entityLess;
 	private String tokenString;
@@ -40,15 +42,23 @@ public class ParsingResult{
 	
 
 
-
-
-	public CalculatedResults getCalculatedResult() {
-		return calculatedResult;
+	public CalculatedResults getRestrictivelyCalculatedResult() {
+		return restrictivelyCalculatedResult;
 	}
 
-	public void setCalculatedResult(CalculatedResults calculatedResult) {
-		this.calculatedResult = calculatedResult;
+	public void setRestrictivelyCalculatedResult(CalculatedResults restrictivelyCalculatedResult) {
+		this.restrictivelyCalculatedResult = restrictivelyCalculatedResult;
 	}
+
+	public CalculatedResults getPermisivelyCalculatedResult() {
+		return permisivelyCalculatedResult;
+	}
+
+	public void setPermisivelyCalculatedResult(CalculatedResults permisivelyCalculatedResult) {
+		this.permisivelyCalculatedResult = permisivelyCalculatedResult;
+	}
+
+
 
 	public String getCorrectedPhrase() {
 		return correctedPhrase;
