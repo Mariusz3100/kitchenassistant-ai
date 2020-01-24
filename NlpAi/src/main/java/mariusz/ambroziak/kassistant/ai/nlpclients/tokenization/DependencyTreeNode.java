@@ -2,6 +2,10 @@ package mariusz.ambroziak.kassistant.ai.nlpclients.tokenization;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import mariusz.ambroziak.kassistant.ai.categorisation.NlpConstants;
+import mariusz.ambroziak.kassistant.ai.logic.QualifiedToken;
 
 public class DependencyTreeNode {
 
@@ -37,19 +41,38 @@ public class DependencyTreeNode {
 		
 		
 		
-//		public List<String> getAllTwoWordDependencies(){
-//			if(children==null||children.isEmpty()) {
-//				return new ArrayList<String>();
-//			}else {
-//				List<String> retValue=new ArrayList<String>();
-//				
-//				for(DependencyTreeNode child:children) {
-//					retValue.add(ch)
-//				}
-//			}
-//			
-//			
-//			
-//		}
+		public List<ConnectionEntry> getAllTwoWordDependencies(List<Token> tokenList){
+			if(children==null||children.isEmpty()) {
+				return new ArrayList<ConnectionEntry>();
+			}else {
+				List<ConnectionEntry> retValue=new ArrayList<ConnectionEntry>();
+				
+				for(DependencyTreeNode child:children) {
+					retValue.addAll(child.getAllTwoWordDependencies(tokenList));
+					
+					Token childNode=findToken(tokenList, child);
+					Token thisNode=findToken(tokenList, this);
+					retValue.add(new ConnectionEntry(thisNode,childNode));
+					if(NlpConstants.of_Word.equals(child.getText())&&!child.getChildren().isEmpty()&&child.getChildren().size()>0) {
+						for(DependencyTreeNode grandChild:child.getChildren()) {
+							Token grandChildNode=findToken(tokenList, grandChild);
+							retValue.add(new ConnectionEntry(thisNode, grandChildNode));
+						}
+					}
+				}
+				return retValue;
+
+			}
+			
+			
+		}
+		private Token findToken(List<Token> tokenList, DependencyTreeNode child) {
+			Optional<Token> found = tokenList.stream().filter(t->t.getText().equals(child.getText())).findFirst();
+			
+			if(found.isPresent())
+				return found.get();
+			else
+				return new Token(child.text, null, null);
+		}
 		
 }
