@@ -11,8 +11,10 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import mariusz.ambroziak.kassistant.ai.enums.ProductType;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
+import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.ConnectionEntry;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
@@ -49,6 +51,7 @@ public class WordClasifier {
 	public static ArrayList<String> quantityAttributeKeywords;
 	public static ArrayList<String> punctationTypeKeywords;
 
+	public static ArrayList<String> freshFoodKeywords;
 
 
 	static {
@@ -77,14 +80,17 @@ public class WordClasifier {
 		quantityTypeKeywords.add("small indefinite quantity");
 		quantityTypeKeywords.add("weight unit");
 		quantityTypeKeywords.add("capacity unit");
-		
-		
+
+
 		//presumably too specific ones:
 		productTypeKeywords.add("dressing");
 
 		quantityAttributeKeywords=new ArrayList<String>();
 		quantityAttributeKeywords.add("size");
-		
+
+		freshFoodKeywords=new ArrayList<String>();
+		freshFoodKeywords.add("fresh");
+
 	}
 
 
@@ -92,8 +98,22 @@ public class WordClasifier {
 		initialCategorization(parsingAPhrase);
 
 		recategorize(parsingAPhrase);
+		extractAndMarkProductProperties(parsingAPhrase);
 
 		categorizeAllElseAsProducts(parsingAPhrase);
+
+	}
+
+	private void extractAndMarkProductProperties(AbstractParsingObject parsingAPhrase) {
+		for(QualifiedToken qt:parsingAPhrase.getFinalResults()) {
+			for(String keyword:freshFoodKeywords) {
+				if(keyword.equals(qt.getText())) {
+					qt.setWordType(WordType.ProductPropertyElement);
+					parsingAPhrase.setFoodTypeClassified(ProductType.fresh);
+				}
+			}
+		}
+
 	}
 
 	private void categorizeAllElseAsProducts(AbstractParsingObject parsingAPhrase) {
@@ -108,9 +128,14 @@ public class WordClasifier {
 	private void recategorize(AbstractParsingObject parsingAPhrase) {
 		fillQuanAndProdPhrases(parsingAPhrase);
 
-		TokenizationResults parsed = this.tokenizator.parse(parsingAPhrase.createCorrectedPhrase());
+		TokenizationResults correctedPhraseParsed = this.tokenizator.parse(parsingAPhrase.createCorrectedPhrase());
 
-		parsingAPhrase.setCorrectedtokens(parsed.getTokens());
+		parsingAPhrase.setCorrectedToknized(correctedPhraseParsed);
+
+		TokenizationResults productPhraseparsed = this.tokenizator.parse(parsingAPhrase.getProductPhrase());
+
+		parsingAPhrase.setProductPhraseTokenized(productPhraseparsed);
+
 
 	}
 
@@ -135,7 +160,6 @@ public class WordClasifier {
 	}
 
 	private void initialCategorization(AbstractParsingObject parsingAPhrase) {
-		Map<Integer,WordType> futureTokens=new HashMap<Integer,WordType>();
 		for(int i=0;i<parsingAPhrase.getEntitylessTokenized().getTokens().size();i++) {
 			Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(i);
 
@@ -152,7 +176,7 @@ public class WordClasifier {
 				}
 			}else {
 				try {
-					classifyWord(parsingAPhrase,i,futureTokens);
+					classifyWord(parsingAPhrase,i);
 				} catch (WordNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -161,15 +185,15 @@ public class WordClasifier {
 		}
 	}
 
-	public void classifyWord(AbstractParsingObject parsingAPhrase, int index, Map<Integer, WordType> futureTokens) throws WordNotFoundException {
-		if(futureTokens.containsKey(index)) {
+	public void classifyWord(AbstractParsingObject parsingAPhrase, int index) throws WordNotFoundException {
+		if(parsingAPhrase.getFutureTokens().containsKey(index)) {
 			return;
 		}
 
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
 		Token t=tokens.getTokens().get(index);
 		String token=t.getText();
-		WordType improperlyFoundType=improperlyFindType(parsingAPhrase,index,futureTokens);
+		WordType improperlyFoundType=improperlyFindType(parsingAPhrase,index,parsingAPhrase.getFutureTokens());
 		if(improperlyFoundType!=null) {
 			addResult(parsingAPhrase,index,new QualifiedToken(t,improperlyFoundType));
 
@@ -189,7 +213,7 @@ public class WordClasifier {
 			} else {
 				WordsApiResult productTypeRecognized = checkProductTypesForWordObject(wordResults);
 				if(productTypeRecognized!=null) {
-					checkOtherTokens(parsingAPhrase,index ,productTypeRecognized,futureTokens);
+					checkOtherTokens(parsingAPhrase,index ,productTypeRecognized);
 				}else {
 					addResult(parsingAPhrase, index, new QualifiedToken(t,null));
 				}
@@ -199,7 +223,7 @@ public class WordClasifier {
 	}
 
 	private WordType improperlyFindType(AbstractParsingObject parsingAPhrase, int index,
-			Map<Integer, WordType> futureTokens) {
+			Map<Integer, QualifiedToken> map) {
 		//TODO this should be deleted in the end
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
 		Token t=tokens.getTokens().get(index);
@@ -276,11 +300,10 @@ public class WordClasifier {
 			parsingAPhrase.getFinalResults().set(index,qt);
 	}
 
-	private void checkOtherTokens(AbstractParsingObject parsingAPhrase, int index,WordsApiResult productTypeRecognized,
-			Map<Integer, WordType> futureTokens) {
-		if(futureTokens.containsKey(index)) {
-			return;
-		}
+	private void checkOtherTokens(AbstractParsingObject parsingAPhrase, int index,WordsApiResult productTypeRecognized) {
+//		if(futureTokens.containsKey(index)) {
+//			return;
+//		}
 
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
 		List<String> setOfRelevantWords=new ArrayList<String>();
@@ -288,53 +311,211 @@ public class WordClasifier {
 		setOfRelevantWords.addAll(productTypeRecognized.getChildTypes());
 		setOfRelevantWords.addAll(productTypeRecognized.getSynonyms());
 		setOfRelevantWords.sort(Collections.reverseOrder());
+
+
+
+
+
 		for(String expandedWordFromApi:setOfRelevantWords) {
 			//check if it exists
-			if(tokens.getPhrase().indexOf(expandedWordFromApi)>=0){
-				//check if it exists in the right place
-				int expandedWordFromApiLength=expandedWordFromApi.split(" ").length;
-				List<Token> actualTokens = tokens.getTokens();
-				//does it start before current index?
 
-				if(expandedWordFromApiLength>1) {
-					if(index-expandedWordFromApiLength>=0) {
-						//start at first wor
-						List<Token> subList =actualTokens.subList(index-expandedWordFromApiLength+1, index+1);
-						String fused=subList.stream().map(s->s.getText()).collect( Collectors.joining(" ") );
-						if(fused.indexOf(expandedWordFromApi)>=0) {
-							QualifiedToken result=new QualifiedToken(fused, "fused", "fused", WordType.ProductElement);
-							for(int i=index-expandedWordFromApiLength+1;i<index;i++) {
-								parsingAPhrase.getFinalResults().set(i, QualifiedToken.createEmptyElementAfterMerged());
 
-							}
-							addResult(parsingAPhrase, index, result);
-							return;
+			int expandedWordFromApiLength=expandedWordFromApi.split(" ").length;
+			List<Token> actualTokens = tokens.getTokens();
+			//does it start before current index?
 
-						}
-						//does it end after current index?
-					}else if(expandedWordFromApiLength+index<=actualTokens.size()) {
-						List<Token> subList = actualTokens.subList(index, expandedWordFromApiLength+index);
-						String fused=subList.stream().map(s->s.getText()).collect( Collectors.joining(" ") );
-						if(fused.indexOf(expandedWordFromApi)>=0) {
-							QualifiedToken result=QualifiedToken.createMerged(fused,WordType.ProductElement);
-
-							for(int i=index;i<expandedWordFromApiLength+index;i++) {
-								futureTokens.put(i, WordType.ProductElement);
-							}
-							addResult(parsingAPhrase, index, result);
-							return;
-						}
-					}else {
-						System.err.println("well, we got some word in the middle of sentence case in word api");
-					}
-				}
+			boolean replaced=wereAnyTokensReplaced(parsingAPhrase, index, expandedWordFromApi,
+					expandedWordFromApiLength, actualTokens);
+			if(!replaced) {
+				replaced=wereAnyTokensReplacedDueToDependencyTree(parsingAPhrase, expandedWordFromApi);
 			}
+
 
 		}
 		//if we didn't find compound phrase from words api, it is a single one 
 		Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(index);
 		addResult(parsingAPhrase, index, new QualifiedToken(t, WordType.ProductElement));
 
+	}
+
+	private boolean wereAnyTokensReplacedDueToDependencyTree(AbstractParsingObject parsingAPhrase,
+			String expandedWordFromApi) {
+		List<ConnectionEntry> connotations = parsingAPhrase.getFromEntityLessConotations();
+
+		TokenizationResults extendedFromApiTokenized = this.tokenizator.parse(expandedWordFromApi);
+		List<ConnectionEntry> dependenciesFromExtendedWord = extendedFromApiTokenized.getAllTwoWordDependencies();
+
+		for(ConnectionEntry connotationFromExendedPhrase:dependenciesFromExtendedWord) {
+			for(ConnectionEntry connotationFromPhrase:connotations) {
+				if(areThoseConnectionsBetweenTheSameWords(connotationFromExendedPhrase, connotationFromPhrase)) {
+					System.out.println("found");
+					
+					goThroughTokensAnMarkConnected(parsingAPhrase, connotationFromExendedPhrase);
+					
+					return true;
+				}
+
+			}
+		}
+		return false;
+	}
+
+	private void goThroughTokensAnMarkConnected(AbstractParsingObject parsingAPhrase,
+			ConnectionEntry connotationFromExendedPhrase) {
+		boolean headFound=false,childFound=false;
+		for(int i=0;i<parsingAPhrase.getFinalResults().size();i++) {
+			if((connotationFromExendedPhrase.getHead().getText().equals(parsingAPhrase.getFinalResults().get(i).getText()))
+					||(connotationFromExendedPhrase.getHead().getLemma().equals(parsingAPhrase.getFinalResults().get(i).getLemma()))) {
+				if(parsingAPhrase.getFinalResults().get(i).getWordType()!=null) {
+					System.out.println("already classified word classified again due to dependency: "+i);
+				}else {
+				
+					QualifiedToken result=new QualifiedToken("["+connotationFromExendedPhrase.getHead().getText()+"]",
+							parsingAPhrase.getFinalResults().get(i).getLemma(), parsingAPhrase.getFinalResults().get(i).getTag(), WordType.ProductElement);
+					parsingAPhrase.getFinalResults().set(i, result);
+					headFound=true;
+				}
+			}else if((connotationFromExendedPhrase.getChild().getText().equals(parsingAPhrase.getFinalResults().get(i).getText()))
+					||(connotationFromExendedPhrase.getChild().getLemma().equals(parsingAPhrase.getFinalResults().get(i).getLemma()))) {
+				if(parsingAPhrase.getFinalResults().get(i).getWordType()!=null) {
+					System.out.println("already classified word classified again due to dependency: "+i);
+				}else {
+				
+					QualifiedToken result=new QualifiedToken("("+connotationFromExendedPhrase.getHead().getText()+")",
+							parsingAPhrase.getFinalResults().get(i).getLemma(), parsingAPhrase.getFinalResults().get(i).getTag(), WordType.ProductElement);
+					parsingAPhrase.getFinalResults().set(i, result);
+				}
+				childFound=true;
+			}
+
+		}
+		
+		if(parsingAPhrase.getEntitylessTokenized().getTokens().size()>parsingAPhrase.getFinalResults().size()) {
+			
+			Token currentToken = parsingAPhrase.getEntitylessTokenized().getTokens().get(parsingAPhrase.getFinalResults().size());
+			if(!headFound) {
+				if(currentToken.getText().equals(connotationFromExendedPhrase.getHead().getText())
+						||currentToken.getLemma().equals(connotationFromExendedPhrase.getHead().getLemma())) {
+					QualifiedToken result=new QualifiedToken("["+connotationFromExendedPhrase.getHead().getText()+"]",
+							connotationFromExendedPhrase.getHead().getLemma(), connotationFromExendedPhrase.getHead().getTag(), WordType.ProductElement);
+					parsingAPhrase.getFinalResults().add(result);
+					headFound=true;
+				}
+			}
+			if(!childFound) {
+				if(currentToken.getText().equals(connotationFromExendedPhrase.getChild().getText())
+						||currentToken.getLemma().equals(connotationFromExendedPhrase.getChild().getLemma())) {
+					QualifiedToken result=new QualifiedToken("("+connotationFromExendedPhrase.getChild().getText()+")",
+							connotationFromExendedPhrase.getChild().getLemma(), connotationFromExendedPhrase.getChild().getTag(), WordType.ProductElement);
+					parsingAPhrase.getFinalResults().add(result);
+					childFound=true;
+				}
+			}
+		}
+			
+		for(int i=parsingAPhrase.getFinalResults().size();i<parsingAPhrase.getEntitylessTokenized().getTokens().size()&&(!headFound||!childFound);i++) {
+			Token currentToken = parsingAPhrase.getEntitylessTokenized().getTokens().get(i);
+			if(!headFound) {
+				if(currentToken.getText().equals(connotationFromExendedPhrase.getHead().getText())
+						||currentToken.getLemma().equals(connotationFromExendedPhrase.getHead().getLemma())) {
+					parsingAPhrase.addFutureToken(i,new QualifiedToken(connotationFromExendedPhrase.getHead(),WordType.ProductElement));
+					headFound=true;
+				}
+			}
+			if(!childFound) {
+				if(currentToken.getText().equals(connotationFromExendedPhrase.getChild().getText())
+						||currentToken.getLemma().equals(connotationFromExendedPhrase.getChild().getLemma())) {
+					parsingAPhrase.addFutureToken(i,new QualifiedToken(connotationFromExendedPhrase.getChild(),WordType.ProductElement));
+					childFound=true;
+				}
+			}
+		}
+	}
+
+	
+
+	private boolean areThoseConnectionsBetweenTheSameWords(ConnectionEntry connotationFromExendedPhrase,
+			ConnectionEntry connotationFromPhrase) {
+		if(connotationFromPhrase.getHead().getText().equals(connotationFromExendedPhrase.getHead().getText())
+				||connotationFromPhrase.getHead().getLemma().equals(connotationFromExendedPhrase.getHead().getLemma())){
+			if(connotationFromPhrase.getChild().getText().equals(connotationFromExendedPhrase.getChild().getText())
+					||connotationFromPhrase.getChild().getLemma().equals(connotationFromExendedPhrase.getChild().getLemma())){
+				return true;
+			}
+		}
+		return false;
+		
+		
+	}
+
+	private boolean wereAnyTokensReplaced(AbstractParsingObject parsingAPhrase, int index,
+			 String expandedWordFromApi, int expandedWordFromApiLength,
+			List<Token> actualTokens) {
+		if(parsingAPhrase.getEntitylessString().indexOf(expandedWordFromApi)>=0){
+
+			if(expandedWordFromApiLength>1) {
+				if(index-expandedWordFromApiLength>=0) {
+					//start at first wor
+					wereAnyTokensReplacedBeforeCurrentOne(parsingAPhrase, index, expandedWordFromApi,
+							expandedWordFromApiLength, actualTokens);
+					return true;
+
+					//does it end after current index?
+				}else if(expandedWordFromApiLength+index<=actualTokens.size()) {
+					if(wereAnyTokensReplacedAfterCurrent(parsingAPhrase, index, expandedWordFromApi,
+							expandedWordFromApiLength, actualTokens)) {
+						return true;
+					}
+				}else {
+					System.err.println("well, we got some word in the middle of sentence case in word api");
+				}
+			}
+		}
+		return false;
+	}
+
+	private boolean wereAnyTokensReplacedBeforeCurrentOne(AbstractParsingObject parsingAPhrase, int index,
+			String expandedWordFromApi, int expandedWordFromApiLength, List<Token> actualTokens) {
+		List<Token> subList =actualTokens.subList(index-expandedWordFromApiLength+1, index+1);
+		String fused=subList.stream().map(s->s.getText()).collect( Collectors.joining(" ") );
+		if(fused.indexOf(expandedWordFromApi)>=0) {
+			QualifiedToken result=new QualifiedToken(fused, "fused", "fused", WordType.ProductElement);
+			for(int i=index-expandedWordFromApiLength+1;i<index;i++) {
+				parsingAPhrase.getFinalResults().set(i, QualifiedToken.createEmptyElementAfterMerged());
+
+			}
+			addResult(parsingAPhrase, index, result);
+			return true;
+		}else {
+			return false;
+		}
+	}
+
+	private boolean wereAnyTokensReplacedAfterCurrent(AbstractParsingObject parsingAPhrase, int index,
+			String expandedWordFromApi, int expandedWordFromApiLength,
+			List<Token> actualTokens) {
+		List<Token> subList = actualTokens.subList(index, expandedWordFromApiLength+index);
+		String fused=subList.stream().map(s->s.getText()).collect( Collectors.joining(" ") );
+		if(fused.indexOf(expandedWordFromApi)>=0) {
+			QualifiedToken result=QualifiedToken.createMerged(fused,WordType.ProductElement);
+
+			addOtherWordsFromExpandedTofututreTokens(index, parsingAPhrase,expandedWordFromApi);
+			addResult(parsingAPhrase, index, result);
+			return true;
+		}else {
+			return false;
+		}
+
+	}
+
+	private void addOtherWordsFromExpandedTofututreTokens(int index, AbstractParsingObject parsingAPhrase,
+			String expandedWordFromApi) {
+		
+		String[] split = expandedWordFromApi.split(" ");
+		for(int i=index;i<split.length+index;i++) {
+			
+			parsingAPhrase.addFutureToken(i, new QualifiedToken(parsingAPhrase.getEntitylessTokenized().getTokens().get(i), WordType.ProductElement));
+		}
 	}
 
 	private static WordsApiResult checkProductTypesForWordObject(ArrayList<WordsApiResult> wordResults) {

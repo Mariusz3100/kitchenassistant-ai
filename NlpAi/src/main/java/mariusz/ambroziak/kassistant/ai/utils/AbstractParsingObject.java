@@ -1,13 +1,18 @@
 package mariusz.ambroziak.kassistant.ai.utils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
+import mariusz.ambroziak.kassistant.ai.enums.ProductType;
+import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.logic.PythonSpacyLabels;
 import mariusz.ambroziak.kassistant.ai.logic.QualifiedToken;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NerResults;
+import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.ConnectionEntry;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
 
@@ -15,8 +20,81 @@ public abstract class AbstractParsingObject {
 
 	private NerResults nerResults;
 	private TokenizationResults entitylessTokenized;
+	private TokenizationResults correctedToknized;
+	private TokenizationResults productPhraseTokenized;
+
+
+
 	private List<QualifiedToken> finalResults;
 	private List<QualifiedToken> permissiveFinalResults;
+	private ProductType foodTypeClassified;
+	List<ConnectionEntry> originalConotations;
+	List<ConnectionEntry> correctedConotations;
+	List<ConnectionEntry> productPhraseConotations;
+
+	Map<Integer, QualifiedToken> futureTokens;
+	
+	public Map<Integer, QualifiedToken> getFutureTokens() {
+		if(this.futureTokens==null)
+			this.futureTokens=new HashMap<Integer, QualifiedToken>();
+		
+		return futureTokens;
+	}
+
+	public void addFutureToken(Integer index,QualifiedToken futureToken) {
+		
+		this.getFutureTokens().put(index,futureToken);
+	}
+
+	public TokenizationResults getProductTokenized() {
+		return productPhraseTokenized;
+	}
+
+	public void setProductPhraseTokenized(TokenizationResults productTokenized) {
+		this.productPhraseTokenized = productTokenized;
+	}
+	public List<ConnectionEntry> getProductPhraseConotations() {
+		return productPhraseConotations;
+	}
+
+	public void setProductPhraseConotations(List<ConnectionEntry> productPhraseConotations) {
+		this.productPhraseConotations = productPhraseConotations;
+	}
+
+	private String quantityPhrase;
+	private String productPhrase;
+	
+	public TokenizationResults getCorrectedToknized() {
+		return correctedToknized;
+	}
+
+	public void setCorrectedToknized(TokenizationResults correctedToknized) {
+		this.correctedToknized = correctedToknized;
+	}
+
+	public List<ConnectionEntry> getFromEntityLessConotations() {
+		return originalConotations;
+	}
+
+	public void setFromEntityLessConotations(List<ConnectionEntry> originalConotations2) {
+		this.originalConotations = originalConotations2;
+	}
+
+	public List<ConnectionEntry> getCorrectedConotations() {
+		return correctedConotations;
+	}
+
+	public void setCorrectedConotations(List<ConnectionEntry> correctedConotations) {
+		this.correctedConotations = correctedConotations;
+	}
+
+	public ProductType getFoodTypeClassified() {
+		return foodTypeClassified;
+	}
+
+	public void setFoodTypeClassified(ProductType productClassified) {
+		this.foodTypeClassified = productClassified;
+	}
 
 	public List<QualifiedToken> getPermissiveFinalResults() {
 		return permissiveFinalResults;
@@ -26,17 +104,11 @@ public abstract class AbstractParsingObject {
 		this.permissiveFinalResults = permissiveFinalResults;
 	}
 
-	private String quantityPhrase;
-	private String productPhrase;
-	private List<Token> correctedtokens;
 
 	public List<Token> getCorrectedtokens() {
-		return correctedtokens;
+		return this.getCorrectedToknized().getTokens();
 	}
 
-	public void setCorrectedtokens(List<Token> correctedtokens) {
-		this.correctedtokens = correctedtokens;
-	}
 
 	public String getQuantityPhrase() {
 		return quantityPhrase;

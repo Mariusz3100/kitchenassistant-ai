@@ -4,7 +4,9 @@ import java.util.List;
 
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.CalculatedResults;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
+import mariusz.ambroziak.kassistant.ai.enums.ProductType;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
+import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.ConnectionEntry;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 //class mainly for presenting in angular
 public class ParsingResult{
@@ -20,25 +22,33 @@ public class ParsingResult{
 	
 	private String correctedPhrase;
 	private List<Token> correctedTokens;
+	private String productTypeFound;
+	public String getProductTypeFound() {
+		return productTypeFound;
+	}
 
-	private List<List<Token>> originalConnotations;
-	public List<List<Token>> getOriginalConnotations() {
+	public void setProductTypeFound(String productTypeFound) {
+		this.productTypeFound = productTypeFound;
+	}
+
+	private List<ConnectionEntry> originalConnotations;
+	public List<ConnectionEntry> getOriginalConnotations() {
 		return originalConnotations;
 	}
 
-	public void setOriginalConnotations(List<List<Token>> originalConnotations) {
+	public void setOriginalConnotations(List<ConnectionEntry> originalConnotations) {
 		this.originalConnotations = originalConnotations;
 	}
 
-	public List<List<Token>> getCorrectedConnotations() {
+	public List<ConnectionEntry> getCorrectedConnotations() {
 		return correctedConnotations;
 	}
 
-	public void setCorrectedConnotations(List<List<Token>> correctedConnotations) {
+	public void setCorrectedConnotations(List<ConnectionEntry> correctedConnotations) {
 		this.correctedConnotations = correctedConnotations;
 	}
 
-	private List<List<Token>> correctedConnotations;
+	private List<ConnectionEntry> correctedConnotations;
 	
 
 

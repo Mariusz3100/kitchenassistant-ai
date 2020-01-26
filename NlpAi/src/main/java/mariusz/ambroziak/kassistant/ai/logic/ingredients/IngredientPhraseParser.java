@@ -27,6 +27,7 @@ import mariusz.ambroziak.kassistant.ai.categorisation.NlpConstants;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.CalculatedResults;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.EdamanIngredientParsingService;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
+import mariusz.ambroziak.kassistant.ai.enums.ProductType;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.logic.ParsingResult;
 import mariusz.ambroziak.kassistant.ai.logic.ParsingResultList;
@@ -35,6 +36,8 @@ import mariusz.ambroziak.kassistant.ai.logic.WordClasifier;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntityRecognitionClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NerResults;
+import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.ConnectionEntry;
+import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.DependencyTreeNode;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
@@ -98,9 +101,13 @@ public class IngredientPhraseParser {
 			TokenizationResults tokens = this.tokenizator.parse(entitylessString);
 			parsingAPhrase.setEntitylessTokenized(tokens);
 			parsingAPhrase.setFinalResults(new ArrayList<QualifiedToken>());
+			
+			initializePrimaryConnotations(parsingAPhrase);
 
+			
 			this.wordClasifier.calculateWordsType(parsingAPhrase);
-
+			initializeCorrectedConnotations(parsingAPhrase);
+			initializeProductPhraseConnotations(parsingAPhrase);
 
 			ParsingResult singleResult = createResultObject(parsingAPhrase);
 
@@ -132,9 +139,9 @@ public class IngredientPhraseParser {
 		object.setExpectedResult(parsingAPhrase.getLearningTuple());
 		object.setRestrictivelyCalculatedResult(calculateWordsFound(parsingAPhrase.getLearningTuple().getFoodMatch(),parsingAPhrase.getFinalResults()));
 		object.setPermisivelyCalculatedResult(calculateWordsFound(parsingAPhrase.getLearningTuple().getFoodMatch(),parsingAPhrase.getPermissiveFinalResults()));
-		
-		setConnotations(parsingAPhrase, object, primaryResults);
-
+		object.setProductTypeFound(parsingAPhrase.getFoodTypeClassified()==null?ProductType.unknown.name():parsingAPhrase.getFoodTypeClassified().name());
+		object.setCorrectedConnotations(parsingAPhrase.getCorrectedConotations());
+		object.setOriginalConnotations(parsingAPhrase.getFromEntityLessConotations());
 		return object;
 	}
 
@@ -164,19 +171,52 @@ public class IngredientPhraseParser {
 
 
 
-	private void setConnotations(ParsingProcessObject parsingAPhrase, ParsingResult object,
-			List<QualifiedToken> primaryResults) {
-		List<Token> correctedTokens =parsingAPhrase.getCorrectedtokens();
-		List<List<Token>> originalConotations = extractPrimarilyFoundConnotations(primaryResults);
+	private void initializeCorrectedConnotations(ParsingProcessObject parsingAPhrase) {
+		
+		TokenizationResults tokenized = parsingAPhrase.getCorrectedToknized();
+		DependencyTreeNode dependencyTreeRoot = tokenized.getDependencyTree();
+		List<ConnectionEntry> correctedConotations = tokenized.getAllTwoWordDependencies();
+		Token foundToken = tokenized.findToken(tokenized.getTokens(),dependencyTreeRoot.getText());
+		correctedConotations.add(new ConnectionEntry(new Token("ROOT","",""),foundToken));
 
-		List<List<Token>> correctedConotations = findConnotationsInCorrected(correctedTokens);
+		
+		parsingAPhrase.setCorrectedConotations(correctedConotations);
 
-		object.setOriginalConnotations(originalConotations);
-		object.setCorrectedConnotations(correctedConotations);
+
+	}
+	
+	private void initializeProductPhraseConnotations(ParsingProcessObject parsingAPhrase) {
+		
+		TokenizationResults tokenized = parsingAPhrase.getProductTokenized();
+		DependencyTreeNode dependencyTreeRoot = tokenized.getDependencyTree();
+		List<ConnectionEntry> productPhraseConotations = tokenized.getAllTwoWordDependencies();
+		Token foundToken = tokenized.findToken(tokenized.getTokens(),dependencyTreeRoot.getText());
+		productPhraseConotations.add(new ConnectionEntry(new Token("ROOT","",""),foundToken));
+		
+		parsingAPhrase.setProductPhraseConotations(productPhraseConotations);
+
+
+	}
+	private void initializePrimaryConnotations(ParsingProcessObject parsingAPhrase) {
+		
+		TokenizationResults tokenized = parsingAPhrase.getEntitylessTokenized();
+		DependencyTreeNode dependencyTreeRoot = tokenized.getDependencyTree();
+		List<ConnectionEntry> originalPhraseConotations = tokenized.getAllTwoWordDependencies();
+		Token foundToken = tokenized.findToken(tokenized.getTokens(),dependencyTreeRoot.getText());
+		originalPhraseConotations.add(new ConnectionEntry(new Token("ROOT","",""),foundToken));
+		
+
+		parsingAPhrase.setFromEntityLessConotations(originalPhraseConotations);
+
+		
 	}
 
 
-
+	private List<ConnectionEntry> extractCorrectedConnotations(ParsingProcessObject parsingAPhrase) {
+		
+		return parsingAPhrase.getCorrectedToknized().getAllTwoWordDependencies();
+		
+	}
 
 	private List<List<Token>> extractPrimarilyFoundConnotations(List<QualifiedToken> primaryResults) {
 		List<List<Token>> originalConotations=new ArrayList<List<Token>>();

@@ -33,7 +33,7 @@ public class ProductsWordsClasifier extends WordClasifier{
 				}
 			}else {
 				try {
-					classifyWord(parsingAPhrase,i,futureTokens);
+					classifyWord(parsingAPhrase,i);
 				} catch (WordNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
