@@ -142,6 +142,9 @@ public class IngredientPhraseParser {
 		object.setProductTypeFound(parsingAPhrase.getFoodTypeClassified()==null?ProductType.unknown.name():parsingAPhrase.getFoodTypeClassified().name());
 		object.setCorrectedConnotations(parsingAPhrase.getCorrectedConotations());
 		object.setOriginalConnotations(parsingAPhrase.getFromEntityLessConotations());
+		object.setAdjacentyConotationsFound(parsingAPhrase.getAdjacentyConotationsFound());
+		object.setDependencyConotationsFound(parsingAPhrase.getDependencyConotationsFound());
+		
 		return object;
 	}
 

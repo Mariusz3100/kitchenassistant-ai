@@ -32,6 +32,25 @@ public class ParsingResult{
 	}
 
 	private List<ConnectionEntry> originalConnotations;
+	List<ConnectionEntry> dependencyConotationsFound;
+	private List<List<String>> adjacentyConotationsFound;
+
+	public List<ConnectionEntry> getDependencyConotationsFound() {
+		return dependencyConotationsFound;
+	}
+
+	public void setDependencyConotationsFound(List<ConnectionEntry> dependencyConotationsFound) {
+		this.dependencyConotationsFound = dependencyConotationsFound;
+	}
+
+	public List<List<String>> getAdjacentyConotationsFound() {
+		return adjacentyConotationsFound;
+	}
+
+	public void setAdjacentyConotationsFound(List<List<String>> adjacentyConotationsFound) {
+		this.adjacentyConotationsFound = adjacentyConotationsFound;
+	}
+
 	public List<ConnectionEntry> getOriginalConnotations() {
 		return originalConnotations;
 	}
