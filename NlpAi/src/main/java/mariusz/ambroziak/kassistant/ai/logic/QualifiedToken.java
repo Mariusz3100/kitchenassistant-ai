@@ -1,11 +1,24 @@
 package mariusz.ambroziak.kassistant.ai.logic;
 
+import org.springframework.beans.Mergeable;
+
+import mariusz.ambroziak.kassistant.ai.enums.MergeType;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 
 public class QualifiedToken extends Token {
 	private WordType wordType;
+	private MergeType mergeType;
 
+
+	public MergeType getMergeType() {
+		return mergeType;
+	}
+
+
+	public void setMergeType(MergeType mergeType) {
+		this.mergeType = mergeType;
+	}
 
 
 	public QualifiedToken(String text, String lemma, String tag, WordType wordType) {
@@ -66,9 +79,7 @@ public class QualifiedToken extends Token {
 				+ getRelationToParentType() + ", pos=" + getPos() + ", head=" + getHead() + ", wordType=" + this.wordType + "]";
 	}
 
-	public static QualifiedToken createEmptyElementAfterMerged() {
-		return new QualifiedToken("", "", "", WordType.Merged,"","","");
-	}
+
 	
 	public static QualifiedToken createMerged(String fused,WordType type) {
 		return new QualifiedToken(fused, "fused", "fused", type,"fused","fused","fused");
