@@ -23,6 +23,10 @@ public class ConnectionEntry {
 	public void setChild(Token child) {
 		this.child = child;
 	}
+	@Override
+	public String toString() {
+		return child.getText() + "("+ head.getText()+")";
+	}
 	
 	
 	
