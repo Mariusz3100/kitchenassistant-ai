@@ -28,9 +28,35 @@ public abstract class AbstractParsingObject {
 	private List<QualifiedToken> finalResults;
 	private List<QualifiedToken> permissiveFinalResults;
 	private ProductType foodTypeClassified;
-	List<ConnectionEntry> originalConotations;
+	List<ConnectionEntry> entitylessConotations;
 	List<ConnectionEntry> correctedConotations;
 	List<ConnectionEntry> productPhraseConotations;
+	List<ConnectionEntry> dependencyConotationsFound;
+	private List<List<String>> adjacentyConotationsFound;
+	
+	
+	public List<List<String>> getAdjacentyConotationsFound() {
+		if(this.adjacentyConotationsFound==null)
+			adjacentyConotationsFound=new ArrayList<List<String>>();
+		
+		return adjacentyConotationsFound;
+	}
+
+	public void setAdjacentyConotationsFound(List<List<String>> adjacentyConotationsFound) {
+		this.adjacentyConotationsFound = adjacentyConotationsFound;
+	}
+
+	public List<ConnectionEntry> getDependencyConotationsFound() {
+		if(this.dependencyConotationsFound==null)
+			dependencyConotationsFound=new ArrayList<ConnectionEntry>();
+		
+		
+		return dependencyConotationsFound;
+	}
+
+	public void setConotationsFound(List<ConnectionEntry> conotationsFound) {
+		this.dependencyConotationsFound = conotationsFound;
+	}
 
 	Map<Integer, QualifiedToken> futureTokens;
 	
@@ -73,11 +99,14 @@ public abstract class AbstractParsingObject {
 	}
 
 	public List<ConnectionEntry> getFromEntityLessConotations() {
-		return originalConotations;
+		if(this.entitylessConotations==null)
+			entitylessConotations=new ArrayList<ConnectionEntry>();
+		
+		return entitylessConotations;
 	}
 
 	public void setFromEntityLessConotations(List<ConnectionEntry> originalConotations2) {
-		this.originalConotations = originalConotations2;
+		this.entitylessConotations = originalConotations2;
 	}
 
 	public List<ConnectionEntry> getCorrectedConotations() {
