@@ -121,7 +121,7 @@ public class WordClasifier {
 	private void categorizeAllElseAsProducts(AbstractParsingObject parsingAPhrase) {
 		List<QualifiedToken> permissiveList=new ArrayList<QualifiedToken>();
 		for(QualifiedToken qt:parsingAPhrase.getFinalResults()) {
-			WordType type=qt.getWordType()==null?WordType.ProductElement:qt.getWordType();
+			WordType type=qt.getWordType()==null||qt.getWordType()==WordType.Unknown?WordType.ProductElement:qt.getWordType();
 			permissiveList.add(new QualifiedToken(qt.getText(), qt.getLemma(), qt.getTag(), type));
 		}
 		parsingAPhrase.setPermissiveFinalResults(permissiveList);
@@ -220,6 +220,9 @@ public class WordClasifier {
 					addResult(parsingAPhrase, index, new QualifiedToken(t,null));
 				}
 			}
+		}else {
+			addResult(parsingAPhrase, index, new QualifiedToken(t,WordType.Unknown));
+
 		}
 
 	}
@@ -295,11 +298,15 @@ public class WordClasifier {
 	}
 
 	private void addResult(AbstractParsingObject parsingAPhrase, int index, QualifiedToken qt) {
-
-		if(index>=parsingAPhrase.getFinalResults().size())
-			parsingAPhrase.getFinalResults().add(qt);
-		else
+		if(index<parsingAPhrase.getFinalResults().size()) {
 			parsingAPhrase.getFinalResults().set(index,qt);
+		}else{
+			while(index>parsingAPhrase.getFinalResults().size()) {
+				parsingAPhrase.getFinalResults().add(QualifiedToken.createNullObject());
+			}
+			parsingAPhrase.getFinalResults().add(qt);
+		}
+
 	}
 
 	private void checkOtherTokens(AbstractParsingObject parsingAPhrase, int index,WordsApiResult productTypeRecognized) {
@@ -340,10 +347,12 @@ public class WordClasifier {
 
 			}
 			//if we didn't find compound phrase from words api, it is a single one 
-			if(!extendedWordFound) {
-				Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(index);
-				addResult(parsingAPhrase, index, new QualifiedToken(t, WordType.ProductElement));
-			}
+
+		}
+
+		if(!extendedWordFound) {
+			Token t=parsingAPhrase.getEntitylessTokenized().getTokens().get(index);
+			addResult(parsingAPhrase, index, new QualifiedToken(t, WordType.ProductElement));
 		}
 
 	}
@@ -381,7 +390,7 @@ public class WordClasifier {
 						||currentToken.getLemma().equals(connotationFromExendedPhrase.getHead().getLemma())) {
 					parsingAPhrase.getFinalResults().add(new QualifiedToken(connotationFromExendedPhrase.getHead(),WordType.ProductElement));
 					parsingAPhrase.getDependencyConotationsFound().add(connotationFromExendedPhrase);
-					
+
 					headFound=true;
 				}
 			}

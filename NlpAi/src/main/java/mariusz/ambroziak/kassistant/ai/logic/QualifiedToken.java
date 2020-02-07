@@ -85,5 +85,12 @@ public class QualifiedToken extends Token {
 		return new QualifiedToken(fused, "fused", "fused", type,"fused","fused","fused");
 	}
 	
+	public static QualifiedToken createNullObject() {
+		return new QualifiedToken("null", "null", "null", WordType.Unknown,"null","null","null");
+	}
+	
+	public boolean isNullObject() {
+		return this.getText().equals("null")&&this.getHead().equals("null");
+	}
 	
 }
