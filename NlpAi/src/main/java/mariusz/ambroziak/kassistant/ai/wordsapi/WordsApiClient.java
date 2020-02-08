@@ -89,7 +89,7 @@ public class WordsApiClient extends RapidApiClient {
 		}
 		return retValue;
 		}catch(WordNotFoundException e) {
-			return null;
+			return new ArrayList<WordsApiResult>();
 		}
 
 	}

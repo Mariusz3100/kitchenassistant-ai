@@ -207,7 +207,14 @@ public class WordClasifier {
 			return;
 		}
 
-		ArrayList<WordsApiResult> wordResults = searchForAllPossibleMeaningsInWordsApi(parsingAPhrase, index, t);
+		checkWithResultsFromWordsApi(parsingAPhrase, index, t);
+
+	}
+
+	private void checkWithResultsFromWordsApi(AbstractParsingObject parsingAPhrase, int index, Token t)
+			throws WordNotFoundException {
+		ArrayList<WordsApiResult> wordResults =new ArrayList<WordsApiResult>();
+		searchForAllPossibleMeaningsInWordsApi(parsingAPhrase,wordResults, index, t);
 		if(wordResults!=null&&!wordResults.isEmpty()) {
 			WordsApiResult quantityTypeRecognized = checkQuantityTypesForWordObject(wordResults);
 			if(quantityTypeRecognized!=null) {
@@ -224,7 +231,6 @@ public class WordClasifier {
 			addResult(parsingAPhrase, index, new QualifiedToken(t,WordType.Unknown));
 
 		}
-
 	}
 
 	private WordType improperlyFindType(AbstractParsingObject parsingAPhrase, int index,
@@ -240,30 +246,22 @@ public class WordClasifier {
 		return null;
 	}
 
-	private ArrayList<WordsApiResult> searchForAllPossibleMeaningsInWordsApi(AbstractParsingObject parsingAPhrase,
-			int index, Token t) throws WordNotFoundException {
+	private boolean searchForAllPossibleMeaningsInWordsApi(AbstractParsingObject parsingAPhrase,
+			ArrayList<WordsApiResult> wordResults, int index, Token t) throws WordNotFoundException {
 		String token=t.getText();
 		String lemma=t.getLemma();
 
-		ArrayList<WordsApiResult> wordResults = wordsApiClient.searchFor(token);
-		if(wordResults==null||wordResults.isEmpty()) {
+		wordResults.addAll(wordsApiClient.searchFor(token));
+		ifEmptyUpdateForLemma(lemma, wordResults);
+		if(canWeFindQuantityInConvertApi(parsingAPhrase, index, t, token, lemma, wordResults))
+			return true;
+		
+		ifEmptyUpdateForWikipediaBaseWord(wordResults, token);
+		return false;
+	}
 
-			if(lemma!=null&&!lemma.isEmpty()&&!lemma.equals("O"))
-			{
-				wordResults = wordsApiClient.searchFor(lemma);
-
-			}
-		}
-		if(wordResults==null||wordResults.isEmpty()) {
-
-			if((lemma!=null&&!lemma.isEmpty())&&Pattern.matches(convertApiCheckRegex, lemma))
-			{
-				QuantityTranslation checkForTranslation = convertClient.checkForTranslation(token);
-				if(checkForTranslation!=null) {
-					addQuantityResult(parsingAPhrase,index,t);
-				}
-			}
-		}
+	private void ifEmptyUpdateForWikipediaBaseWord(ArrayList<WordsApiResult> wordResults, String token)
+			throws WordNotFoundException {
 		if(wordResults==null||wordResults.isEmpty()) {
 
 			String baseWord =null;
@@ -277,18 +275,42 @@ public class WordClasifier {
 				QuantityTranslation checkForTranslation = convertClient.checkForTranslation(token);
 				if(checkForTranslation!=null) {
 					WordsApiResult war=new WordsApiResultImpostor(checkForTranslation);
-					wordResults=new ArrayList<WordsApiResult>();
-
 					wordResults.add(war);
-					return wordResults;
 				}
 			}
 			if(baseWord!=null&&!baseWord.isEmpty())
 			{
-				wordResults = wordsApiClient.searchFor(baseWord);
+				wordResults.addAll(wordsApiClient.searchFor(baseWord));
 			}
 		}
-		return wordResults;
+	}
+
+	private boolean canWeFindQuantityInConvertApi(AbstractParsingObject parsingAPhrase, int index, Token t, String token,
+			String lemma, ArrayList<WordsApiResult> wordResults) throws WordNotFoundException {
+		if(wordResults==null||wordResults.isEmpty()) {
+
+			if((lemma!=null&&!lemma.isEmpty())&&Pattern.matches(convertApiCheckRegex, lemma))
+			{
+				QuantityTranslation checkForTranslation = convertClient.checkForTranslation(token);
+				if(checkForTranslation!=null) {
+					addQuantityResult(parsingAPhrase,index,t);
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+
+	private void ifEmptyUpdateForLemma(String lemma, ArrayList<WordsApiResult> wordResults) {
+		if(wordResults==null||wordResults.isEmpty()) {
+
+			if(lemma!=null&&!lemma.isEmpty()&&!lemma.equals("O"))
+			{
+				wordResults.addAll(wordsApiClient.searchFor(lemma));
+
+			}
+		}
 	}
 
 	protected void addQuantityResult(AbstractParsingObject parsingAPhrase, int index, Token t) {
@@ -314,40 +336,15 @@ public class WordClasifier {
 			return;
 		}
 
+		List<String> setOfRelevantWords = getSetOfAllRelevantWords(productTypeRecognized);
+
 		TokenizationResults tokens=parsingAPhrase.getEntitylessTokenized();
-		List<String> setOfRelevantWords=new ArrayList<String>();
-		//we take them from the longest to the shortest
-		setOfRelevantWords.addAll(productTypeRecognized.getChildTypes());
-		setOfRelevantWords.addAll(productTypeRecognized.getSynonyms());
-		setOfRelevantWords.sort(Collections.reverseOrder());
-
-
-
 		boolean extendedWordFound=false;
-
 
 		for(int i=0;i<setOfRelevantWords.size()&&!extendedWordFound;i++) {
 			//check if not longer than 2 words (for now)
 			String expandedWordFromApi=setOfRelevantWords.get(i);
-
-
-			int expandedWordFromApiLength=expandedWordFromApi.split(" ").length;
-			if(expandedWordFromApiLength<3)
-			{
-
-				List<Token> actualTokens = tokens.getTokens();
-				//does it start before current index?
-
-				extendedWordFound=wereAnyTokensMarkedBesideCurrentDueToAdjacency(parsingAPhrase, index, expandedWordFromApi,
-						expandedWordFromApiLength, actualTokens);
-				if(!extendedWordFound) {
-					extendedWordFound=wereAnyTokensReplacedDueToDependencyTree(parsingAPhrase, expandedWordFromApi);
-				}
-
-
-			}
-			//if we didn't find compound phrase from words api, it is a single one 
-
+			extendedWordFound = wasExtendedWordFound(parsingAPhrase, index, tokens,expandedWordFromApi);
 		}
 
 		if(!extendedWordFound) {
@@ -355,6 +352,31 @@ public class WordClasifier {
 			addResult(parsingAPhrase, index, new QualifiedToken(t, WordType.ProductElement));
 		}
 
+	}
+
+	private boolean wasExtendedWordFound(AbstractParsingObject parsingAPhrase, int index, TokenizationResults tokens,
+			 String expandedWordFromApi) {
+		boolean extendedWordFound=false;
+		int expandedWordFromApiLength=expandedWordFromApi.split(" ").length;
+		if(expandedWordFromApiLength<3)
+		{
+			List<Token> actualTokens = tokens.getTokens();
+			extendedWordFound=wereAnyTokensMarkedBesideCurrentDueToAdjacency(parsingAPhrase, index, expandedWordFromApi,
+					expandedWordFromApiLength, actualTokens);
+			if(!extendedWordFound) {
+				extendedWordFound=wereAnyTokensReplacedDueToDependencyTree(parsingAPhrase, expandedWordFromApi);
+			}
+		}
+		return extendedWordFound;
+	}
+
+	private List<String> getSetOfAllRelevantWords(WordsApiResult productTypeRecognized) {
+		List<String> setOfRelevantWords=new ArrayList<String>();
+		//we take them from the longest to the shortest
+		setOfRelevantWords.addAll(productTypeRecognized.getChildTypes());
+		setOfRelevantWords.addAll(productTypeRecognized.getSynonyms());
+		setOfRelevantWords.sort(Collections.reverseOrder());
+		return setOfRelevantWords;
 	}
 
 	private boolean wereAnyTokensReplacedDueToDependencyTree(AbstractParsingObject parsingAPhrase,
@@ -385,78 +407,114 @@ public class WordClasifier {
 		//check current token
 		if(parsingAPhrase.getFinalResults().size()<parsingAPhrase.getEntitylessTokenized().getTokens().size()&&(!headFound||!childFound)) {
 			Token currentToken = parsingAPhrase.getEntitylessTokenized().getTokens().get(parsingAPhrase.getFinalResults().size());
-			if(!headFound) {
-				if(currentToken.getText().equals(connotationFromExendedPhrase.getHead().getText())
-						||currentToken.getLemma().equals(connotationFromExendedPhrase.getHead().getLemma())) {
-					parsingAPhrase.getFinalResults().add(new QualifiedToken(connotationFromExendedPhrase.getHead(),WordType.ProductElement));
-					parsingAPhrase.getDependencyConotationsFound().add(connotationFromExendedPhrase);
-
-					headFound=true;
-				}
-			}
-			if(!childFound) {
-				if(currentToken.getText().equals(connotationFromExendedPhrase.getChild().getText())
-						||currentToken.getLemma().equals(connotationFromExendedPhrase.getChild().getLemma())) {
-					parsingAPhrase.getFinalResults().add(new QualifiedToken(connotationFromExendedPhrase.getChild(),WordType.ProductElement));
-					childFound=true;
-				}
-			}
+			headFound = checkForHead(parsingAPhrase, connotationFromExendedPhrase, headFound, currentToken);
+			childFound = checkForChild(parsingAPhrase, connotationFromExendedPhrase, childFound, currentToken);
 		}
 		//checking past tokens
 		for(int i=0;i<parsingAPhrase.getFinalResults().size()&&(!headFound||!childFound);i++) {
 			if((connotationFromExendedPhrase.getHead().getText().equals(parsingAPhrase.getFinalResults().get(i).getText()))
 					||(connotationFromExendedPhrase.getHead().getLemma().equals(parsingAPhrase.getFinalResults().get(i).getLemma()))) {
-				if(parsingAPhrase.getFinalResults().get(i).getWordType()!=null) {
-					System.out.println("already classified word classified again due to dependency: "+i);
-				}else {
-
-					QualifiedToken result=new QualifiedToken(connotationFromExendedPhrase.getHead().getText(),
-							parsingAPhrase.getFinalResults().get(i).getLemma(), parsingAPhrase.getFinalResults().get(i).getTag(), WordType.ProductElement);
-					parsingAPhrase.getFinalResults().set(i, result);
-					parsingAPhrase.getDependencyConotationsFound().add(connotationFromExendedPhrase);
-
-					headFound=true;
-				}
+				headFound = checkForHeadInPast(parsingAPhrase, connotationFromExendedPhrase, headFound, i);
 			}else if((connotationFromExendedPhrase.getChild().getText().equals(parsingAPhrase.getFinalResults().get(i).getText()))
 					||(connotationFromExendedPhrase.getChild().getLemma().equals(parsingAPhrase.getFinalResults().get(i).getLemma()))) {
-				if(parsingAPhrase.getFinalResults().get(i).getWordType()!=null) {
-					System.out.println("already classified word classified again due to dependency: "+i);
-				}else {
-
-					QualifiedToken result=new QualifiedToken(connotationFromExendedPhrase.getChild().getText(),
-							parsingAPhrase.getFinalResults().get(i).getLemma(), parsingAPhrase.getFinalResults().get(i).getTag(), WordType.ProductElement);
-					parsingAPhrase.getFinalResults().set(i, result);
-				}
-				childFound=true;
+				childFound = checkForChildInPast(parsingAPhrase, connotationFromExendedPhrase, i);
 			}
-
 		}
 		//if still not both found, check future tokens as well
 		if(parsingAPhrase.getEntitylessTokenized().getTokens().size()>parsingAPhrase.getFinalResults().size()&&(!headFound||!childFound)) {
 
 			Token currentToken = parsingAPhrase.getEntitylessTokenized().getTokens().get(parsingAPhrase.getFinalResults().size());
-			if(!headFound) {
-				if(currentToken.getText().equals(connotationFromExendedPhrase.getHead().getText())
-						||currentToken.getLemma().equals(connotationFromExendedPhrase.getHead().getLemma())) {
-					QualifiedToken result=new QualifiedToken(connotationFromExendedPhrase.getHead().getText(),
-							connotationFromExendedPhrase.getHead().getLemma(), connotationFromExendedPhrase.getHead().getTag(), WordType.ProductElement);
-					parsingAPhrase.getFinalResults().add(result);
-					parsingAPhrase.getDependencyConotationsFound().add(connotationFromExendedPhrase);
-
-					headFound=true;
-				}
-			}
-			if(!childFound) {
-				if(currentToken.getText().equals(connotationFromExendedPhrase.getChild().getText())
-						||currentToken.getLemma().equals(connotationFromExendedPhrase.getChild().getLemma())) {
-					QualifiedToken result=new QualifiedToken(connotationFromExendedPhrase.getChild().getText(),
-							connotationFromExendedPhrase.getChild().getLemma(), connotationFromExendedPhrase.getChild().getTag(), WordType.ProductElement);
-					parsingAPhrase.getFinalResults().add(result);
-					childFound=true;
-				}
-			}
+			headFound=checkForHeadInFuture(parsingAPhrase, connotationFromExendedPhrase, headFound, currentToken);
+			childFound=checkForChildInFuture(parsingAPhrase, connotationFromExendedPhrase, childFound, currentToken);
 		}
 
+	}
+
+	private boolean checkForChildInFuture(AbstractParsingObject parsingAPhrase,
+			ConnectionEntry connotationFromExendedPhrase, boolean childFound, Token currentToken) {
+		if(!childFound) {
+			if(currentToken.getText().equals(connotationFromExendedPhrase.getChild().getText())
+					||currentToken.getLemma().equals(connotationFromExendedPhrase.getChild().getLemma())) {
+				QualifiedToken result=new QualifiedToken(connotationFromExendedPhrase.getChild().getText(),
+						connotationFromExendedPhrase.getChild().getLemma(), connotationFromExendedPhrase.getChild().getTag(), WordType.ProductElement);
+				parsingAPhrase.getFinalResults().add(result);
+				childFound=true;
+			}
+		}
+		return childFound;
+	}
+
+	private boolean checkForHeadInFuture(AbstractParsingObject parsingAPhrase,
+			ConnectionEntry connotationFromExendedPhrase, boolean headFound, Token currentToken) {
+		if(!headFound) {
+			if(currentToken.getText().equals(connotationFromExendedPhrase.getHead().getText())
+					||currentToken.getLemma().equals(connotationFromExendedPhrase.getHead().getLemma())) {
+				QualifiedToken result=new QualifiedToken(connotationFromExendedPhrase.getHead().getText(),
+						connotationFromExendedPhrase.getHead().getLemma(), connotationFromExendedPhrase.getHead().getTag(), WordType.ProductElement);
+				parsingAPhrase.getFinalResults().add(result);
+				parsingAPhrase.getDependencyConotationsFound().add(connotationFromExendedPhrase);
+
+				headFound=true;
+			}
+		}
+		return headFound;
+	}
+
+	private boolean checkForChildInPast(AbstractParsingObject parsingAPhrase,
+			ConnectionEntry connotationFromExendedPhrase, int i) {
+		boolean childFound;
+		if(parsingAPhrase.getFinalResults().get(i).getWordType()!=null) {
+			System.out.println("already classified word classified again due to dependency: "+i);
+		}else {
+
+			QualifiedToken result=new QualifiedToken(connotationFromExendedPhrase.getChild().getText(),
+					parsingAPhrase.getFinalResults().get(i).getLemma(), parsingAPhrase.getFinalResults().get(i).getTag(), WordType.ProductElement);
+			parsingAPhrase.getFinalResults().set(i, result);
+		}
+		childFound=true;
+		return childFound;
+	}
+
+	private boolean checkForHeadInPast(AbstractParsingObject parsingAPhrase,
+			ConnectionEntry connotationFromExendedPhrase, boolean headFound, int i) {
+		if(parsingAPhrase.getFinalResults().get(i).getWordType()!=null) {
+			System.out.println("already classified word classified again due to dependency: "+i);
+		}else {
+
+			QualifiedToken result=new QualifiedToken(connotationFromExendedPhrase.getHead().getText(),
+					parsingAPhrase.getFinalResults().get(i).getLemma(), parsingAPhrase.getFinalResults().get(i).getTag(), WordType.ProductElement);
+			parsingAPhrase.getFinalResults().set(i, result);
+			parsingAPhrase.getDependencyConotationsFound().add(connotationFromExendedPhrase);
+
+			headFound=true;
+		}
+		return headFound;
+	}
+
+	private boolean checkForChild(AbstractParsingObject parsingAPhrase, ConnectionEntry connotationFromExendedPhrase,
+			boolean childFound, Token currentToken) {
+		if(!childFound) {
+			if(currentToken.getText().equals(connotationFromExendedPhrase.getChild().getText())
+					||currentToken.getLemma().equals(connotationFromExendedPhrase.getChild().getLemma())) {
+				parsingAPhrase.getFinalResults().add(new QualifiedToken(connotationFromExendedPhrase.getChild(),WordType.ProductElement));
+				childFound=true;
+			}
+		}
+		return childFound;
+	}
+
+	private boolean checkForHead(AbstractParsingObject parsingAPhrase, ConnectionEntry connotationFromExendedPhrase,
+			boolean headFound, Token currentToken) {
+		if(!headFound) {
+			if(currentToken.getText().equals(connotationFromExendedPhrase.getHead().getText())
+					||currentToken.getLemma().equals(connotationFromExendedPhrase.getHead().getLemma())) {
+				parsingAPhrase.getFinalResults().add(new QualifiedToken(connotationFromExendedPhrase.getHead(),WordType.ProductElement));
+				parsingAPhrase.getDependencyConotationsFound().add(connotationFromExendedPhrase);
+
+				headFound=true;
+			}
+		}
+		return headFound;
 	}
 
 
