@@ -47,8 +47,8 @@ public class EdamanIngredientParsingService {
 		
 		this.resourceLoader = resourceLoader;
 		
-	//	this.inputFileResource=this.resourceLoader.getResource("classpath:/teachingResources/wordsInput");
-		this.expectedOutputFileResource=this.resourceLoader.getResource("classpath:/teachingResources/wordsOutput");
+		this.inputFileResource=this.resourceLoader.getResource("classpath:/teachingResources/wordsInput");
+		this.expectedOutputFileResource=this.resourceLoader.getResource("classpath:/teachingResources/wordsTestset");
 		
 
 	}
