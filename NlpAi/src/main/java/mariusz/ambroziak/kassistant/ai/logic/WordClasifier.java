@@ -214,21 +214,24 @@ public class WordClasifier {
 	private void checkWithResultsFromWordsApi(AbstractParsingObject parsingAPhrase, int index, Token t)
 			throws WordNotFoundException {
 		ArrayList<WordsApiResult> wordResults =new ArrayList<WordsApiResult>();
-		searchForAllPossibleMeaningsInWordsApi(parsingAPhrase,wordResults, index, t);
-		if(wordResults!=null&&!wordResults.isEmpty()) {
-			WordsApiResult quantityTypeRecognized = checkQuantityTypesForWordObject(wordResults);
-			if(quantityTypeRecognized!=null) {
-				addQuantityResult(parsingAPhrase, index, t);
-			} else {
-				WordsApiResult productTypeRecognized = checkProductTypesForWordObject(wordResults);
-				if(productTypeRecognized!=null) {
-					checkOtherTokens(parsingAPhrase,index ,productTypeRecognized);
-				}else {
-					addResult(parsingAPhrase, index, new QualifiedToken(t,null));
+		boolean found=searchForAllPossibleMeaningsInWordsApi(parsingAPhrase,wordResults, index, t);
+		if(!found){
+			if(wordResults!=null&&!wordResults.isEmpty()) {
+				WordsApiResult quantityTypeRecognized = checkQuantityTypesForWordObject(wordResults);
+				if(quantityTypeRecognized!=null) {
+					addQuantityResult(parsingAPhrase, index, t);
+				} else {
+					WordsApiResult productTypeRecognized = checkProductTypesForWordObject(wordResults);
+					if(productTypeRecognized!=null) {
+						checkOtherTokens(parsingAPhrase,index ,productTypeRecognized);
+					}else {
+						addResult(parsingAPhrase, index, new QualifiedToken(t,null));
+					}
 				}
+			}else {
+				addResult(parsingAPhrase, index, new QualifiedToken(t,WordType.Unknown));
+
 			}
-		}else {
-			addResult(parsingAPhrase, index, new QualifiedToken(t,WordType.Unknown));
 
 		}
 	}
