@@ -36,6 +36,7 @@ import mariusz.ambroziak.kassistant.ai.utils.ProblemLogger;
 @Component
 public class TescoDetailsApiClientService {
 	private static final String DETAILS_BASE_URL = "https://dev.tescolabs.com/product/?tpnb=";
+	private static final String PROXY_URL = "";
 	private static final int  productsReturnedLimit=100;
 
 	private static final String headerName="Ocp-Apim-Subscription-Key";
