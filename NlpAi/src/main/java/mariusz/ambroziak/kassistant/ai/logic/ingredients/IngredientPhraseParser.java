@@ -60,6 +60,8 @@ public class IngredientPhraseParser {
 	private WordClasifier wordClasifier;
 
 
+	private final String csvSeparator=";";
+	private final String wordSeparator=",";
 
 
 
@@ -116,6 +118,27 @@ public class IngredientPhraseParser {
 
 		}
 
+		for(ParsingResult result:retValue.getResults()){
+			String line=result.getOriginalPhrase()+csvSeparator+
+					result.getExpectedResult().getFoodMatch()+csvSeparator;
+
+			String restrictive="";
+			for(String x:result.getRestrictivelyCalculatedResult().getMarkedWords()){
+				if(!restrictive.isEmpty())
+					restrictive+=wordSeparator;
+				restrictive+=x;
+			}
+
+			String permissive="";
+			for(String x:result.getRestrictivelyCalculatedResult().getMarkedWords()){
+				if(!permissive.isEmpty())
+					permissive+=wordSeparator;
+				permissive+=x;
+			}
+			line+=permissive+csvSeparator+restrictive;
+			System.out.println(line);
+		}
+
 		return retValue;
 
 	}
@@ -144,7 +167,10 @@ public class IngredientPhraseParser {
 		object.setOriginalConnotations(parsingAPhrase.getFromEntityLessConotations());
 		object.setAdjacentyConotationsFound(parsingAPhrase.getAdjacentyConotationsFound());
 		object.setDependencyConotationsFound(parsingAPhrase.getDependencyConotationsFound());
-		
+
+
+
+
 		return object;
 	}
 
@@ -167,8 +193,9 @@ public class IngredientPhraseParser {
 		}
 
 		List<String> notFound=Arrays.asList(expected.split(" "));
+		List<String> wordsMarked=finalResults.stream().filter(qualifiedToken -> qualifiedToken.getWordType()==WordType.ProductElement).map(qualifiedToken -> qualifiedToken.getText()).collect(Collectors.toList());
 
-		return new CalculatedResults(notFound,found,mistakenlyFound);
+		return new CalculatedResults(notFound,found,mistakenlyFound,wordsMarked);
 	}
 
 
@@ -313,7 +340,9 @@ public class IngredientPhraseParser {
 
 		List<String> notFound=Arrays.asList(expected.split(" "));
 
-		return new CalculatedResults(notFound,found,mistakenlyFound);
+		List<String> wordsMarked=parsingAPhrase.getPermissiveFinalResults().stream().filter(qualifiedToken -> qualifiedToken.getWordType()==WordType.ProductElement).map(qualifiedToken -> qualifiedToken.getText()).collect(Collectors.toList());
+
+		return new CalculatedResults(notFound,found,mistakenlyFound,wordsMarked);
 
 	}
 
@@ -340,6 +369,7 @@ public class IngredientPhraseParser {
 
 		phrase=phrase.replaceFirst("½", "1/2");
 		phrase=phrase.replaceFirst("¼", "1/4");
+		phrase=phrase.replaceAll("é", "e");
 
 		String replacedString=phrase.replaceAll(spacelessRegex, "$1 $2");
 		if(!phrase.equals(replacedString)) {
