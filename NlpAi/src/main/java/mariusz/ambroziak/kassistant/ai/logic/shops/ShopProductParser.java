@@ -83,7 +83,8 @@ public class ShopProductParser {
 		ParsingResultList retValue=new ParsingResultList();
 
 		List<Tesco_Product> inputs= this.tescoService.getProduktsFor(phrase);
-		for(Tesco_Product product:inputs) {
+		for(int i=0;i<inputs.size()&&i<5;i++) {
+			Tesco_Product product=inputs.get(i);
 			ProductParsingProcessObject parsingAPhrase=new ProductParsingProcessObject(product);
 			NerResults entitiesFound = this.nerRecognizer.find(product.getName());
 			parsingAPhrase.setEntities(entitiesFound);
@@ -138,8 +139,13 @@ public class ShopProductParser {
 		found=parsingAPhrase.getFinalResults().stream().filter(t->t.getWordType()==WordType.ProductElement).map(t->t.getText()).collect(Collectors.toList());
 		
 		List<String> notFound=Arrays.asList(expected.split(" "));
-
-		return new CalculatedResults(notFound,found,mistakenlyFound);
+		List<QualifiedToken> permissiveFinalResults = parsingAPhrase.getPermissiveFinalResults();
+//		List<String> wordsMarked= permissiveFinalResults.stream()
+//				.filter(qualifiedToken -> qualifiedToken.getWordType()==WordType.ProductElement)
+//				.map(qualifiedToken -> qualifiedToken.getText())
+//				.collect(Collectors.toList());
+		List<String> wordsMarked=new ArrayList<>();
+		return new CalculatedResults(notFound,found,mistakenlyFound,wordsMarked);
 		
 	}
 
@@ -185,11 +191,11 @@ public class ShopProductParser {
 		List<Tesco_Product> inputs= tescoDetailsService.getProduktsFromFile();
 		for(Tesco_Product product:inputs) {
 			ProductParsingProcessObject parsingAPhrase=new ProductParsingProcessObject(product);
+			parsingAPhrase.setProduct(product);
+			String originalPhrase=product.getName();
 
-			String name=product.getName();
 
-			
-			NerResults entitiesFound = this.nerRecognizer.find(name);
+			NerResults entitiesFound = this.nerRecognizer.find(originalPhrase);
 			parsingAPhrase.setEntities(entitiesFound);
 
 			String entitylessString=parsingAPhrase.getEntitylessString();

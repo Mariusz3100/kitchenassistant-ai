@@ -8,15 +8,24 @@ public class CalculatedResults{
 	private List<String> notFound;
 	private List<String> found; 
 	private List<String> improperlyFound;
-	
-	
-	public CalculatedResults(List<String> notFound, List<String> found, List<String> improperlyFound) {
-		super();
+	private List<String> markedWords;
+
+	public List<String> getMarkedWords() {
+		return markedWords;
+	}
+
+	public void setMarkedWords(List<String> markedWords) {
+		this.markedWords = markedWords;
+	}
+
+
+	public CalculatedResults(List<String> notFound, List<String> found, List<String> improperlyFound, List<String> markedWords) {
 		this.notFound = notFound;
 		this.found = found;
 		this.improperlyFound = improperlyFound;
+		this.markedWords = markedWords;
 	}
-	
+
 	public List<String> getNotFound() {
 		return notFound;
 	}
