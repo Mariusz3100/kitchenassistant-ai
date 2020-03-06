@@ -2,10 +2,7 @@ package mariusz.ambroziak.kassistant.ai.logic;
 
 import java.util.List;
 
-import mariusz.ambroziak.kassistant.ai.edamam.nlp.CalculatedResults;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
-import mariusz.ambroziak.kassistant.ai.enums.ProductType;
-import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.ConnectionEntry;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 //class mainly for presenting in angular

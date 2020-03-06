@@ -1,4 +1,4 @@
-package mariusz.ambroziak.kassistant.ai.edamam.nlp;
+package mariusz.ambroziak.kassistant.ai.logic;
 
 import java.util.List;
 

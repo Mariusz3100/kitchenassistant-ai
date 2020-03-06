@@ -5,13 +5,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.ws.rs.core.MultivaluedMap;
 
+import mariusz.ambroziak.kassistant.ai.logic.shops.ProductParsingProcessObject;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,23 +33,26 @@ import mariusz.ambroziak.kassistant.ai.utils.ProblemLogger;
 
 @Component
 public class TescoDetailsApiClientService {
-	private static final String DETAILS_BASE_URL = "https://dev.tescolabs.com/product/?tpnb=";
+//	private static final String DETAILS_BASE_URL = "https://dev.tescolabs.com/product/?tpnb=";
+	private static final String DETAILS_BASE_URL = "";
+
+
 	private static final String PROXY_URL = "";
 	private static final int  productsReturnedLimit=100;
 
 	private static final String headerName="Ocp-Apim-Subscription-Key";
 	private static final String headerValue="bb40509242724f799153796d8718c3f3";
 
-	
+
 	@Autowired
 	private ResourceLoader resourceLoader;
 	private Resource inputFileResource;
 
 
-	
-	
-	
-	
+
+
+
+
 	public TescoDetailsApiClientService(ResourceLoader resourceLoader) {
 		super();
 		this.resourceLoader = resourceLoader;
@@ -138,7 +139,7 @@ public class TescoDetailsApiClientService {
 	}
 
 
-	
+
 
 	private ArrayList<Tesco_Product> parseResponse(String response) {
 		JSONObject jsonRoot=new JSONObject(response);
@@ -198,7 +199,7 @@ public class TescoDetailsApiClientService {
 
 	private String calculateDescription(JSONObject singleProductJson) {
 		if(singleProductJson.has("description")) {
-		
+
 //		JSONArray jsonArray = singleProductJson.getString("description");
 //		String retValue="";
 //		for(int i=0;i<jsonArray.length();i++) {
@@ -213,14 +214,14 @@ public class TescoDetailsApiClientService {
 		}
 	}
 
-//qtyContents={"quantity":360,"totalQuantity":360,"quantityUom":"g","unitQty":"KG","netContents":"360g"}
+	//qtyContents={"quantity":360,"totalQuantity":360,"quantityUom":"g","unitQty":"KG","netContents":"360g"}
 	private String calculateQuantityJspString(JSONObject singleProductJson, String detailsUrl) {
 		if(singleProductJson.has("qtyContents")) {
-		JSONObject qty=singleProductJson.getJSONObject("qtyContents");
-		float f=qty.getFloat("quantity");
-		String qt=qty.getString("quantityUom");
-		
-		return f+" "+qt;
+			JSONObject qty=singleProductJson.getJSONObject("qtyContents");
+			float f=qty.getFloat("quantity");
+			String qt=qty.getString("quantityUom");
+
+			return f+" "+qt;
 		}
 		return "";
 	}
@@ -239,24 +240,28 @@ public class TescoDetailsApiClientService {
 	}
 
 
-	public List<Tesco_Product> getProduktsFromFile() throws IOException {
+	public List<ProductParsingProcessObject> getProduktsFromFile() throws IOException {
 		InputStream inputStream = inputFileResource.getInputStream();
 		BufferedReader br=new BufferedReader(new InputStreamReader(inputStream));
-		List<Tesco_Product> retValue=new ArrayList<Tesco_Product>();
+		List<ProductParsingProcessObject> retValue=new ArrayList<ProductParsingProcessObject>();
 
 		String line=br.readLine();
 		Map<String,String> differences=new HashMap<String,String>();
 
 		while(line!=null) {
 			String[] elements=line.split(";");
-			Tesco_Product poduct=this.getProduktByUrl(elements[1]);
-			retValue.add(poduct);
-			System.out.println("Parsed: "+poduct.getName());
+			Tesco_Product product=this.getProduktByUrl(elements[1]);
+			ProductParsingProcessObject parseObj=new ProductParsingProcessObject(product);
+			String[] expected=elements[2].split(" ");
+			parseObj.setExpectedWords(Arrays.asList(expected));
+			System.out.println("Parsed: "+product.getName());
+			retValue.add(parseObj);
+
 			line=br.readLine();
 		}
 		return retValue;
-		
-		
+
+
 	}
 
 

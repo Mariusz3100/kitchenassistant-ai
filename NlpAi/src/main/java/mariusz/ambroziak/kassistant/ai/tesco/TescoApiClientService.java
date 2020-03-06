@@ -35,7 +35,7 @@ import mariusz.ambroziak.kassistant.ai.utils.ProblemLogger;
 
 @Component
 public class TescoApiClientService {
-	private static final String DETAILS_BASE_URL = "https://dev.tescolabs.com/product/?tpnb=";
+	private static final String DETAILS_BASE_URL = "http://localhost:8085/proxy/product?url=https://dev.tescolabs.com/product/?tpnb=";
 	//private static final String baseUrl= "https://dev.tescolabs.com/grocery/products/";
 	private static final String baseUrl= "http://localhost:8085/proxy/search";
 

@@ -1,30 +1,17 @@
 package mariusz.ambroziak.kassistant.ai.logic.ingredients;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.regex.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.ModelAndView;
 
-import ch.qos.logback.core.pattern.SpacePadder;
 import mariusz.ambroziak.kassistant.ai.categorisation.NlpConstants;
-import mariusz.ambroziak.kassistant.ai.edamam.nlp.CalculatedResults;
+import mariusz.ambroziak.kassistant.ai.logic.CalculatedResults;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.EdamanIngredientParsingService;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.enums.ProductType;
@@ -43,9 +30,6 @@ import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationClien
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
 import mariusz.ambroziak.kassistant.ai.utils.ParsingProcessObject;
 import mariusz.ambroziak.kassistant.ai.wordsapi.WordNotFoundException;
-import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiClient;
-import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiResult;
-
 
 
 @Service
