@@ -9,6 +9,7 @@ import java.util.*;
 
 import javax.ws.rs.core.MultivaluedMap;
 
+import mariusz.ambroziak.kassistant.ai.enums.ProductType;
 import mariusz.ambroziak.kassistant.ai.logic.shops.ProductParsingProcessObject;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -252,7 +253,10 @@ public class TescoDetailsApiClientService {
 			String[] elements=line.split(";");
 			Tesco_Product product=this.getProduktByUrl(elements[1]);
 			ProductParsingProcessObject parseObj=new ProductParsingProcessObject(product);
-			String[] expected=elements[2].split(" ");
+			String type=elements[2];
+			ProductType foundType=ProductType.parseType(type);
+			parseObj.setExpectedType(foundType);
+			String[] expected=elements[3].split(",");
 			parseObj.setExpectedWords(Arrays.asList(expected));
 			System.out.println("Parsed: "+product.getName());
 			retValue.add(parseObj);

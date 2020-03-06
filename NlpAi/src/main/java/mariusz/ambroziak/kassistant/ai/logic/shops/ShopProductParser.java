@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -99,8 +100,10 @@ public class ShopProductParser {
 		object.setEntities(fused);
 		object.setEntityLess(parsingAPhrase.getEntitylessString());
 		object.setTokens(parsingAPhrase.getFinalResults());
-
-		String expected=parsingAPhrase.getExpectedWords().stream().collect(Collectors.joining(" ")).toLowerCase();
+		String expected=parsingAPhrase.getExpectedWords().stream().collect(Collectors.joining(" "));
+		LearningTuple lp=new LearningTuple(parsingAPhrase.getOriginalPhrase(),0,"empty",expected,parsingAPhrase.getExpectedType());
+		object.setExpectedResult(lp);
+		object.setProductTypeFound(parsingAPhrase.getExpectedType().toString());
 		object.setRestrictivelyCalculatedResult(calculateWordsFound(expected,parsingAPhrase.getFinalResults()));
 		object.setPermisivelyCalculatedResult(calculateWordsFound(expected,parsingAPhrase.getPermissiveFinalResults()));
 

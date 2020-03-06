@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
+import mariusz.ambroziak.kassistant.ai.enums.ProductType;
+import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.logic.ParsingResultList;
 import mariusz.ambroziak.kassistant.ai.logic.PythonSpacyLabels;
 import mariusz.ambroziak.kassistant.ai.logic.QualifiedToken;
@@ -18,7 +20,7 @@ import mariusz.ambroziak.kassistant.ai.utils.AbstractParsingObject;
 public class ProductParsingProcessObject extends AbstractParsingObject{
 	private ProductData product;
 	private List<String> expectedWords;
-
+	private ProductType expectedType;
 	public List<String> getExpectedWords() {
 		return expectedWords;
 	}
@@ -42,7 +44,13 @@ public class ProductParsingProcessObject extends AbstractParsingObject{
 		this.product = product;
 	}
 
+	public ProductType getExpectedType() {
+		return expectedType;
+	}
 
+	public void setExpectedType(ProductType expectedType) {
+		this.expectedType = expectedType;
+	}
 
 	@Override
 	protected String getOriginalPhrase() {

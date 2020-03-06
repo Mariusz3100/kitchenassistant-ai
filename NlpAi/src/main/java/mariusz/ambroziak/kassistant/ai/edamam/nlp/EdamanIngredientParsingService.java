@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import mariusz.ambroziak.kassistant.ai.enums.ProductType;
+import mariusz.ambroziak.kassistant.ai.tesco.ProductData;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,11 +70,11 @@ public class EdamanIngredientParsingService {
 			String foodFound=elements[1];
 			String multiplierString=elements[2];
 			String containerPhraseString=elements[3];
-
+			ProductType pt=elements.length<=4?ProductType.unknown:ProductType.parseType(elements[4]);
 			
 			float multiplier=Float.parseFloat(multiplierString);
 			PreciseQuantity pq=EdamanApiQuantityExtractor.getResultingQuantity(multiplier,containerPhraseString);
-			LearningTuple er=new LearningTuple(phrase,pq.getAmount(), containerPhraseString, foodFound,pq.getType());
+			LearningTuple er=new LearningTuple(phrase,pq.getAmount(), containerPhraseString, foodFound,pt);
 
 			listOfExpectedResults.add(er);
 			
