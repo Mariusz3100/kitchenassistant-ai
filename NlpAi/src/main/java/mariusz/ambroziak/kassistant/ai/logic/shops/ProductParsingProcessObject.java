@@ -17,6 +17,17 @@ import mariusz.ambroziak.kassistant.ai.utils.AbstractParsingObject;
 
 public class ProductParsingProcessObject extends AbstractParsingObject{
 	private ProductData product;
+	private List<String> expectedWords;
+
+	public List<String> getExpectedWords() {
+		return expectedWords;
+	}
+
+	public void setExpectedWords(List<String> expectedWords) {
+		this.expectedWords = expectedWords;
+	}
+
+
 
 	public ProductData getProduct() {
 		return product;

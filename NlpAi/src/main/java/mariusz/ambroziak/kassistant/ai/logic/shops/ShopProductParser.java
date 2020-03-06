@@ -1,51 +1,30 @@
 package mariusz.ambroziak.kassistant.ai.logic.shops;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.regex.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.ModelAndView;
 
-import ch.qos.logback.core.pattern.SpacePadder;
-import mariusz.ambroziak.kassistant.ai.edamam.nlp.CalculatedResults;
+import mariusz.ambroziak.kassistant.ai.logic.CalculatedResults;
 import mariusz.ambroziak.kassistant.ai.edamam.nlp.EdamanIngredientParsingService;
-import mariusz.ambroziak.kassistant.ai.edamam.nlp.LearningTuple;
 import mariusz.ambroziak.kassistant.ai.enums.WordType;
 import mariusz.ambroziak.kassistant.ai.logic.ParsingResult;
 import mariusz.ambroziak.kassistant.ai.logic.ParsingResultList;
 import mariusz.ambroziak.kassistant.ai.logic.ProductsWordsClasifier;
 import mariusz.ambroziak.kassistant.ai.logic.QualifiedToken;
 import mariusz.ambroziak.kassistant.ai.logic.WordClasifier;
-import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntity;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NamedEntityRecognitionClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.ner.NerResults;
-import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.Token;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationClientService;
 import mariusz.ambroziak.kassistant.ai.nlpclients.tokenization.TokenizationResults;
 import mariusz.ambroziak.kassistant.ai.tesco.TescoApiClientService;
 import mariusz.ambroziak.kassistant.ai.tesco.TescoDetailsApiClientService;
 import mariusz.ambroziak.kassistant.ai.tesco.Tesco_Product;
-import mariusz.ambroziak.kassistant.ai.utils.ParsingProcessObject;
 import mariusz.ambroziak.kassistant.ai.wordsapi.WordNotFoundException;
-import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiClient;
-import mariusz.ambroziak.kassistant.ai.wordsapi.WordsApiResult;
-
 
 
 @Service
@@ -120,34 +99,58 @@ public class ShopProductParser {
 		object.setEntities(fused);
 		object.setEntityLess(parsingAPhrase.getEntitylessString());
 		object.setTokens(parsingAPhrase.getFinalResults());
-		object.setRestrictivelyCalculatedResult(calculateWordsFound(parsingAPhrase));
+
+		String expected=parsingAPhrase.getExpectedWords().stream().collect(Collectors.joining(" ")).toLowerCase();
+		object.setRestrictivelyCalculatedResult(calculateWordsFound(expected,parsingAPhrase.getFinalResults()));
+		object.setPermisivelyCalculatedResult(calculateWordsFound(expected,parsingAPhrase.getPermissiveFinalResults()));
+
 		return object;
 	}
 
 
-
-
-
-
-
-
-	private CalculatedResults calculateWordsFound(ProductParsingProcessObject parsingAPhrase) {
-		String expected="";
-		
+	private CalculatedResults calculateWordsFound(String expected,List<QualifiedToken> finalResults) {
 		List<String> found=new ArrayList<String>();
 		List<String> mistakenlyFound=new ArrayList<String>();
-		found=parsingAPhrase.getFinalResults().stream().filter(t->t.getWordType()==WordType.ProductElement).map(t->t.getText()).collect(Collectors.toList());
-		
+
+		for(QualifiedToken qt:finalResults) {
+			String qtText = qt.getText().toLowerCase();
+			if(qt.getWordType()==WordType.ProductElement) {
+				if(expected.contains(qtText)) {
+					found.add(qtText);
+					expected=expected.replaceAll(qtText, "").replaceAll("  ", " ");
+				}else {
+					mistakenlyFound.add(qtText);
+				}
+			}
+		}
+
 		List<String> notFound=Arrays.asList(expected.split(" "));
-		List<QualifiedToken> permissiveFinalResults = parsingAPhrase.getPermissiveFinalResults();
-//		List<String> wordsMarked= permissiveFinalResults.stream()
-//				.filter(qualifiedToken -> qualifiedToken.getWordType()==WordType.ProductElement)
-//				.map(qualifiedToken -> qualifiedToken.getText())
-//				.collect(Collectors.toList());
-		List<String> wordsMarked=new ArrayList<>();
+		List<String> wordsMarked=finalResults.stream().filter(qualifiedToken -> qualifiedToken.getWordType()==WordType.ProductElement).map(qualifiedToken -> qualifiedToken.getText()).collect(Collectors.toList());
+
 		return new CalculatedResults(notFound,found,mistakenlyFound,wordsMarked);
-		
 	}
+
+//	private CalculatedResults calculateWordsFound(ProductParsingProcessObject parsingAPhrase) {
+//		List<String> found=new ArrayList<String>();
+//		List<String> mistakenlyFound=new ArrayList<String>();
+//		String expected=parsingAPhrase.getExpectedWords().stream().collect(Collectors.joining(" ")).toLowerCase();
+//		for(QualifiedToken qt:parsingAPhrase.getFinalResults()) {
+//			if(qt.getWordType()==WordType.ProductElement) {
+//				if(expected.contains(qt.getText().toLowerCase())) {
+//					found.add(qt.getText());
+//					expected=expected.replaceAll(qt.getText().toLowerCase(), "").replaceAll("  ", " ");
+//				}else {
+//					mistakenlyFound.add(qt.getText());
+//				}
+//			}
+//		}
+//
+//		List<String> notFound=Arrays.asList(expected.split(" "));
+//		List<String> wordsMarked=parsingAPhrase.getFinalResults().stream().filter(qualifiedToken -> qualifiedToken.getWordType()==WordType.ProductElement).map(qualifiedToken -> qualifiedToken.getText()).collect(Collectors.toList());
+//
+//		return new CalculatedResults(notFound,found,mistakenlyFound,wordsMarked);
+//
+//	}
 
 
 
@@ -188,11 +191,11 @@ public class ShopProductParser {
 	public ParsingResultList parseFromFile() throws IOException {
 		ParsingResultList retValue=new ParsingResultList();
 
-		List<Tesco_Product> inputs= tescoDetailsService.getProduktsFromFile();
-		for(Tesco_Product product:inputs) {
-			ProductParsingProcessObject parsingAPhrase=new ProductParsingProcessObject(product);
-			parsingAPhrase.setProduct(product);
-			String originalPhrase=product.getName();
+		List<ProductParsingProcessObject> inputs= tescoDetailsService.getProduktsFromFile();
+		for(ProductParsingProcessObject parsingAPhrase:inputs) {
+			//ProductParsingProcessObject parsingAPhrase=new ProductParsingProcessObject(product);
+			//parsingAPhrase.setProduct(product);
+			String originalPhrase=parsingAPhrase.getProduct().getName();
 
 
 			NerResults entitiesFound = this.nerRecognizer.find(originalPhrase);
